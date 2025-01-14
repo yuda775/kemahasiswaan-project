@@ -5,21 +5,27 @@ import AppMenuItem from './AppMenuItem.vue';
 
 const model = ref([
     {
+        label: 'Mahasiswa',
+        items: [
+            { label: 'Aktivitas', icon: 'pi pi-fw pi-graduation-cap', to: '/mahasiswa/kredit-aktivitas' },
+            { label: 'Proposal', icon: 'pi pi-fw pi-file', to: '/mahasiswa/proposal-kegiatan' },
+            { label: 'Tracer Alumni', icon: 'pi pi-fw pi-users', to: '/mahasiswa/tracer-alumni' }
+        ]
+    },
+    {
         label: 'Kemahasiswaan',
         items: [
-            { label: 'Kredit Aktivitas', icon: 'pi pi-fw pi-graduation-cap', to: '/kredit-aktivitas' },
-            { label: 'Proposal Kegiatan', icon: 'pi pi-fw pi-file', to: '/proposal-kegiatan' },
-            { label: 'Tracer Alumni', icon: 'pi pi-fw pi-users', to: '/tracer-alumni' }
+            { label: 'Kredit Aktivitas', icon: 'pi pi-fw pi-graduation-cap', to: '/kemahasiswaan/kredit-aktivitas' },
+            { label: 'Proposal Kegiatan', icon: 'pi pi-fw pi-file', to: '/kemahasiswaan/proposal-kegiatan' },
+            { label: 'Tracer Alumni', icon: 'pi pi-fw pi-users', to: '/kemahasiswaan/tracer-alumni' }
         ]
     },
     {
         label: 'Master Data',
         items: [
-            { label: 'Jurusan', icon: 'pi pi-fw pi-bookmark', to: '/master-data/jurusan' },
-            { label: 'Program Studi', icon: 'pi pi-fw pi-bookmark', to: '/master-data/program-studi' },
-            { label: 'Tahun Akademik', icon: 'pi pi-fw pi-bookmark', to: '/master-data/tahun-akademik' },
-            { label: 'Semester', icon: 'pi pi-fw pi-bookmark', to: '/master-data/semester' },
-            { label: 'Kegiatan Mahasiswa', icon: 'pi pi-fw pi-bookmark', to: '/master-data/unit-kegiatan-mahasiswa' },
+            { label: 'Program Studi', icon: 'pi pi-fw pi-tags', to: '/master-data/program-studi' },
+            { label: 'Tahun Akademik', icon: 'pi pi-fw pi-calendar', to: '/master-data/tahun-akademik' },
+            { label: 'Unit Kegiatan Mahasiswa', icon: 'pi pi-fw pi-users', to: '/master-data/unit-kegiatan-mahasiswa' },
             { label: 'Dosen', icon: 'pi pi-fw pi-user', to: '/master-data/dosen' },
             { label: 'Mahasiswa', icon: 'pi pi-fw pi-user', to: '/master-data/mahasiswa' }
         ]
@@ -53,11 +59,6 @@ const model = ref([
         icon: 'pi pi-fw pi-briefcase',
         to: '/pages',
         items: [
-            {
-                label: 'Landing',
-                icon: 'pi pi-fw pi-globe',
-                to: '/landing'
-            },
             {
                 label: 'Auth',
                 icon: 'pi pi-fw pi-user',

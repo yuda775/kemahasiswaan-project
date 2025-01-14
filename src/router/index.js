@@ -5,14 +5,89 @@ const router = createRouter({
     history: createWebHistory(),
     routes: [
         {
+            path: '/mahasiswa',
+            name: 'mahasiswa',
+            component: AppLayout,
+            children: [
+                {
+                    path: '/mahasiswa/kredit-aktivitas',
+                    name: 'mahasiswa-kredit-aktivitas',
+                    component: () => import('@/views/mahasiswa/aktivitas.vue')
+                },
+                {
+                    path: '/mahasiswa/proposal-kegiatan',
+                    name: 'mahasiswa-proposal',
+                    component: () => import('@/views/mahasiswa/proposal.vue')
+                },
+                {
+                    path: '/mahasiswa/tracer-alumni',
+                    name: 'mahasiswa-tracer-alumni',
+                    component: () => import('@/views/mahasiswa/alumni.vue')
+                }
+            ]
+        },
+        {
+            path: '/dosen',
+            name: 'dosen',
+            component: AppLayout,
+            children: [
+                {
+                    path: '/dosen/kredit-aktivitas',
+                    name: 'dosen-kredit-aktivitas',
+                    component: () => import('@/views/dosen/aktivitas.vue')
+                }
+            ]
+        },
+        {
             path: '/kemahasiswaan',
             name: 'kemahasiswaan',
             component: AppLayout,
             children: [
                 {
-                    path: '/kredit-aktivitas',
-                    name: 'kredit-aktivitas',
+                    path: '/kemahasiswaan/kredit-aktivitas',
+                    name: 'kemahasiswaan-kredit-aktivitas',
                     component: () => import('@/views/kemahasiswaan/aktivitas.vue')
+                },
+                {
+                    path: '/kemahasiswaan/proposal-kegiatan',
+                    name: 'kemahasiswaan-proposal',
+                    component: () => import('@/views/kemahasiswaan/proposal.vue')
+                },
+                {
+                    path: '/kemahasiswaan/tracer-alumni',
+                    name: 'kemahasiswaan-tracer-alumni',
+                    component: () => import('@/views/kemahasiswaan/alumni.vue')
+                }
+            ]
+        },
+        {
+            path: '/master-data',
+            component: AppLayout,
+            children: [
+                {
+                    path: '/master-data/program-studi',
+                    name: 'program-studi',
+                    component: () => import('@/views/masterData/programStudi.vue')
+                },
+                {
+                    path: '/master-data/tahun-akademik',
+                    name: 'tahun-akademik',
+                    component: () => import('@/views/masterData/tahunAkademik.vue')
+                },
+                {
+                    path: '/master-data/unit-kegiatan-mahasiswa',
+                    name: 'unit-kegiatan-mahasiswa',
+                    component: () => import('@/views/masterData/UKM.vue')
+                },
+                {
+                    path: '/master-data/dosen',
+                    name: 'dosen',
+                    component: () => import('@/views/masterData/dosen.vue')
+                },
+                {
+                    path: '/master-data/mahasiswa',
+                    name: 'mahasiswa',
+                    component: () => import('@/views/masterData/mahasiswa.vue')
                 }
             ]
         },
