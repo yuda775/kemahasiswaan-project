@@ -7,11 +7,16 @@ const model = ref([
     {
         label: 'Mahasiswa',
         items: [
-            { label: 'Aktivitas', icon: 'pi pi-fw pi-graduation-cap', to: '/mahasiswa/kredit-aktivitas' },
-            { label: 'Proposal', icon: 'pi pi-fw pi-file', to: '/mahasiswa/proposal-kegiatan' },
-            { label: 'Tracer Alumni', icon: 'pi pi-fw pi-users', to: '/mahasiswa/tracer-alumni' }
+            { label: 'Aktivitas', icon: 'pi pi-fw pi-graduation-cap', to: '/student/kredit-aktivitas' },
+            { label: 'Proposal', icon: 'pi pi-fw pi-file', to: '/student/proposal-kegiatan' },
+            { label: 'Tracer Alumni', icon: 'pi pi-fw pi-users', to: '/student/tracer-alumni' }
         ]
     },
+    {
+        label: 'Dosen',
+        items: [{ label: 'Aktivitas', icon: 'pi pi-fw pi-graduation-cap', to: '/lecturer/kredit-aktivitas' }]
+    },
+
     {
         label: 'Kemahasiswaan',
         items: [
