@@ -1,18 +1,10 @@
 <script setup>
 import { FilterMatchMode } from '@primevue/core/api';
+import axios from 'axios';
 import { useToast } from 'primevue/usetoast';
 import { onMounted, ref } from 'vue';
 
-onMounted(() => {
-    programs.value = [
-        { id: 1, code: 'IF', name: 'Teknik Informatika' },
-        { id: 2, code: 'SI', name: 'Sistem Informasi' },
-        { id: 3, code: 'DKV', name: 'Desain Komunikasi Visual' }
-    ];
-});
-
 const toast = useToast();
-const dt = ref();
 const programs = ref([]);
 const programDialog = ref(false);
 const deleteProgramDialog = ref(false);
@@ -22,6 +14,31 @@ const filters = ref({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS }
 });
 const submitted = ref(false);
+
+const handleApiCall = async (method, url, data = null) => {
+    try {
+        const response = await axios[method](url, data);
+        toast.add({
+            severity: 'success',
+            summary: 'Success',
+            detail: response.config.method === 'delete' ? 'Program deleted successfully' : 'Program updated successfully',
+            life: 3000
+        });
+        return response;
+    } catch (error) {
+        console.error('API Error:', error);
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: method === 'delete' ? 'Failed to delete Program' : 'Failed to update Program',
+            life: 3000
+        });
+    }
+};
+
+const updateProgram = (id, data) => handleApiCall('patch', `${import.meta.env.VITE_APP_BASE_URL}/api/program-study/${id}`, data);
+const createProgram = (data) => handleApiCall('post', `${import.meta.env.VITE_APP_BASE_URL}/api/program-study/`, data);
+const deleteProgramApi = (id) => handleApiCall('delete', `${import.meta.env.VITE_APP_BASE_URL}/api/program-study/${id}`);
 
 const openNew = () => {
     program.value = {};
@@ -36,29 +53,28 @@ const hideDialog = () => {
 
 const saveProgram = () => {
     submitted.value = true;
-
     if (program.value.code && program.value.name) {
         if (program.value.id) {
-            // Update existing program
-            const index = programs.value.findIndex((p) => p.id === program.value.id);
-            if (index !== -1) {
-                programs.value[index] = { ...program.value };
-                toast.add({ severity: 'success', summary: 'Successful', detail: 'Program Updated', life: 3000 });
-            }
+            updateProgram(program.value.id, program.value).then((response) => {
+                if (response) {
+                    programs.value = programs.value.map((p) => (p.id === program.value.id ? { ...program.value } : p));
+                    hideDialog();
+                }
+            });
         } else {
-            // Create new program
-            program.value.id = programs.value.length + 1; // Simple ID generation
-            programs.value.push({ ...program.value });
-            toast.add({ severity: 'success', summary: 'Successful', detail: 'Program Created', life: 3000 });
+            createProgram(program.value).then((response) => {
+                if (response) {
+                    programs.value.push(response.data.data);
+                    hideDialog();
+                }
+            });
         }
-
-        programDialog.value = false;
-        program.value = {};
     }
 };
 
 const editProgram = (data) => {
     program.value = { ...data };
+    submitted.value = false;
     programDialog.value = true;
 };
 
@@ -68,11 +84,36 @@ const confirmDeleteProgram = (data) => {
 };
 
 const deleteProgram = () => {
-    programs.value = programs.value.filter((p) => p.id !== program.value.id);
-    deleteProgramDialog.value = false;
-    program.value = {};
-    toast.add({ severity: 'success', summary: 'Successful', detail: 'Program Deleted', life: 3000 });
+    deleteProgramApi(program.value.id).then((response) => {
+        if (response) {
+            programs.value = programs.value.filter((p) => p.id !== program.value.id);
+            deleteProgramDialog.value = false;
+        }
+    });
 };
+
+const fetchData = async (endpoint, target) => {
+    try {
+        const response = await axios.get(`${import.meta.env.VITE_APP_BASE_URL}/api/${endpoint}/`);
+        if (response.status === 200) {
+            target.value = response.data.data;
+        }
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: `Failed to fetch ${endpoint} data`,
+            life: 3000
+        });
+    }
+};
+
+const getDataPrograms = () => fetchData('program-study', programs);
+
+onMounted(() => {
+    getDataPrograms();
+});
 </script>
 
 <template>
@@ -122,12 +163,12 @@ const deleteProgram = () => {
             <div class="flex flex-col gap-6">
                 <div>
                     <label for="code" class="block font-bold mb-3">Kode</label>
-                    <InputText id="code" v-model.trim="program.code" required="true" autofocus :invalid="submitted && !program.code" fluid />
+                    <InputText id="code" v-model.trim="program.code" required="true" autofocus :invalid="submitted && !program.code" class="w-full" />
                     <small v-if="submitted && !program.code" class="text-red-500">Kode diperlukan.</small>
                 </div>
                 <div>
                     <label for="name" class="block font-bold mb-3">Nama</label>
-                    <InputText id="name" v-model.trim="program.name" required="true" :invalid="submitted && !program.name" fluid />
+                    <InputText id="name" v-model.trim="program.name" required="true" :invalid="submitted && !program.name" class="w-full" />
                     <small v-if="submitted && !program.name" class="text-red-500">Nama diperlukan.</small>
                 </div>
             </div>

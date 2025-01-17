@@ -1,18 +1,10 @@
 <script setup>
 import { FilterMatchMode } from '@primevue/core/api';
+import axios from 'axios';
 import { useToast } from 'primevue/usetoast';
 import { onMounted, ref } from 'vue';
 
-onMounted(() => {
-    lecturers.value = [
-        { id: 1, name: 'Dr. John Doe', email: 'john.doe@example.com', password: 'password123', employee_number: 'EMP001' },
-        { id: 2, name: 'Prof. Jane Smith', email: 'jane.smith@example.com', password: 'password123', employee_number: 'EMP002' },
-        { id: 3, name: 'Dr. Alice Johnson', email: 'alice.johnson@example.com', password: 'password123', employee_number: 'EMP003' }
-    ];
-});
-
 const toast = useToast();
-const dt = ref();
 const lecturers = ref([]);
 const lecturerDialog = ref(false);
 const deleteLecturerDialog = ref(false);
@@ -22,6 +14,31 @@ const filters = ref({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS }
 });
 const submitted = ref(false);
+
+const handleApiCall = async (method, url, data = null) => {
+    try {
+        const response = await axios[method](url, data);
+        toast.add({
+            severity: 'success',
+            summary: 'Success',
+            detail: response.config.method === 'delete' ? 'Lecturer deleted successfully' : 'Lecturer updated successfully',
+            life: 3000
+        });
+        return response;
+    } catch (error) {
+        console.error('API Error:', error);
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: method === 'delete' ? 'Failed to delete Lecturer' : 'Failed to update Lecturer',
+            life: 3000
+        });
+    }
+};
+
+const updateLecturer = (id, data) => handleApiCall('patch', `${import.meta.env.VITE_APP_BASE_URL}/api/lecturer/${id}`, data);
+const createLecturer = (data) => handleApiCall('post', `${import.meta.env.VITE_APP_BASE_URL}/api/lecturer/`, data);
+const deleteLecturerApi = (id) => handleApiCall('delete', `${import.meta.env.VITE_APP_BASE_URL}/api/lecturer/${id}`);
 
 const openNew = () => {
     lecturer.value = {};
@@ -36,29 +53,28 @@ const hideDialog = () => {
 
 const saveLecturer = () => {
     submitted.value = true;
-
-    if (lecturer.value.name && lecturer.value.email && lecturer.value.password && lecturer.value.employee_number) {
+    if (lecturer.value.name && lecturer.value.email && lecturer.value.password && lecturer.value.employeeNumber) {
         if (lecturer.value.id) {
-            // Update existing lecturer
-            const index = lecturers.value.findIndex((l) => l.id === lecturer.value.id);
-            if (index !== -1) {
-                lecturers.value[index] = { ...lecturer.value };
-                toast.add({ severity: 'success', summary: 'Successful', detail: 'Lecturer Updated', life: 3000 });
-            }
+            updateLecturer(lecturer.value.id, lecturer.value).then((response) => {
+                if (response) {
+                    lecturers.value = lecturers.value.map((l) => (l.id === lecturer.value.id ? { ...lecturer.value } : l));
+                    hideDialog();
+                }
+            });
         } else {
-            // Create new lecturer
-            lecturer.value.id = lecturers.value.length + 1; // Simple ID generation
-            lecturers.value.push({ ...lecturer.value });
-            toast.add({ severity: 'success', summary: 'Successful', detail: 'Lecturer Created', life: 3000 });
+            createLecturer(lecturer.value).then((response) => {
+                if (response) {
+                    lecturers.value.push(response.data.data);
+                    hideDialog();
+                }
+            });
         }
-
-        lecturerDialog.value = false;
-        lecturer.value = {};
     }
 };
 
 const editLecturer = (data) => {
     lecturer.value = { ...data };
+    submitted.value = false;
     lecturerDialog.value = true;
 };
 
@@ -68,11 +84,36 @@ const confirmDeleteLecturer = (data) => {
 };
 
 const deleteLecturer = () => {
-    lecturers.value = lecturers.value.filter((l) => l.id !== lecturer.value.id);
-    deleteLecturerDialog.value = false;
-    lecturer.value = {};
-    toast.add({ severity: 'success', summary: 'Successful', detail: 'Lecturer Deleted', life: 3000 });
+    deleteLecturerApi(lecturer.value.id).then((response) => {
+        if (response) {
+            lecturers.value = lecturers.value.filter((l) => l.id !== lecturer.value.id);
+            deleteLecturerDialog.value = false;
+        }
+    });
 };
+
+const fetchData = async (endpoint, target) => {
+    try {
+        const response = await axios.get(`${import.meta.env.VITE_APP_BASE_URL}/api/${endpoint}/`);
+        if (response.status === 200) {
+            target.value = response.data.data;
+        }
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: `Failed to fetch ${endpoint} data`,
+            life: 3000
+        });
+    }
+};
+
+const getDataLecturers = () => fetchData('lecturer', lecturers);
+
+onMounted(() => {
+    getDataLecturers();
+});
 </script>
 
 <template>
@@ -108,7 +149,7 @@ const deleteLecturer = () => {
 
                 <Column field="name" header="Name" sortable style="min-width: 16rem"></Column>
                 <Column field="email" header="Email" sortable style="min-width: 16rem"></Column>
-                <Column field="employee_number" header="Employee Number" sortable style="min-width: 12rem"></Column>
+                <Column field="employeeNumber" header="Employee Number" sortable style="min-width: 12rem"></Column>
                 <Column :exportable="false" style="min-width: 12rem">
                     <template #body="{ data }">
                         <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editLecturer(data)" />
@@ -123,23 +164,23 @@ const deleteLecturer = () => {
             <div class="flex flex-col gap-6">
                 <div>
                     <label for="name" class="block font-bold mb-3">Name</label>
-                    <InputText id="name" v-model.trim="lecturer.name" required="true" autofocus :invalid="submitted && !lecturer.name" fluid />
+                    <InputText id="name" v-model.trim="lecturer.name" required="true" autofocus :invalid="submitted && !lecturer.name" class="w-full" />
                     <small v-if="submitted && !lecturer.name" class="text-red-500">Name is required.</small>
                 </div>
                 <div>
                     <label for="email" class="block font-bold mb-3">Email</label>
-                    <InputText id="email" v-model.trim="lecturer.email" required="true" :invalid="submitted && !lecturer.email" fluid />
+                    <InputText id="email" v-model.trim="lecturer.email" required="true" :invalid="submitted && !lecturer.email" class="w-full" />
                     <small v-if="submitted && !lecturer.email" class="text-red-500">Email is required.</small>
                 </div>
                 <div>
                     <label for="password" class="block font-bold mb-3">Password</label>
-                    <InputText id="password" v-model.trim="lecturer.password" required="true" :invalid="submitted && !lecturer.password" type="password" fluid />
+                    <InputText id="password" v-model.trim="lecturer.password" required="true" :invalid="submitted && !lecturer.password" type="password" class="w-full" />
                     <small v-if="submitted && !lecturer.password" class="text-red-500">Password is required.</small>
                 </div>
                 <div>
-                    <label for="employee_number" class="block font-bold mb-3">Employee Number</label>
-                    <InputText id="employee_number" v-model.trim="lecturer.employee_number" required="true" :invalid="submitted && !lecturer.employee_number" fluid />
-                    <small v-if="submitted && !lecturer.employee_number" class="text-red-500">Employee Number is required.</small>
+                    <label for="employeeNumber" class="block font-bold mb-3">Employee Number</label>
+                    <InputText id="employeeNumber" v-model.trim="lecturer.employeeNumber" required="true" :invalid="submitted && !lecturer.employeeNumber" class="w-full" />
+                    <small v-if="submitted && !lecturer.employeeNumber" class="text-red-500">Employee Number is required.</small>
                 </div>
             </div>
 
