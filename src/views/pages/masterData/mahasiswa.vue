@@ -8,8 +8,10 @@ const toast = useToast();
 const programs = ref([]);
 const lecturers = ref([]);
 const students = ref([]);
-const studentDialog = ref(false);
+const addStudentDialog = ref(false);
+const editStudentDialog = ref(false);
 const deleteStudentDialog = ref(false);
+const changePasswordDialog = ref(false);
 const student = ref({});
 const selectedStudents = ref([]);
 const filters = ref({
@@ -18,8 +20,8 @@ const filters = ref({
 const submitted = ref(false);
 
 const genders = ref([
-    { label: 'Male', value: 'MALE' },
-    { label: 'Female', value: 'FEMALE' }
+    { label: 'Laki-laki', value: 'MALE' },
+    { label: 'Perempuan', value: 'FEMALE' }
 ]);
 
 const handleApiCall = async (method, url, data = null) => {
@@ -46,45 +48,91 @@ const handleApiCall = async (method, url, data = null) => {
 const updateStudent = (id, data) => handleApiCall('patch', `${import.meta.env.VITE_APP_BASE_URL}/api/student/${id}`, data);
 const createStudent = (data) => handleApiCall('post', `${import.meta.env.VITE_APP_BASE_URL}/api/student/register/`, data);
 const deleteStudentApi = (id) => handleApiCall('delete', `${import.meta.env.VITE_APP_BASE_URL}/api/student/${id}`);
+const updateStudentPassword = (id, data) => handleApiCall('patch', `${import.meta.env.VITE_APP_BASE_URL}/api/student/change-password/${id}`, data);
 
-const openNew = () => {
+const openAddStudentDialog = () => {
     student.value = {};
     submitted.value = false;
-    studentDialog.value = true;
+    addStudentDialog.value = true;
+};
+
+const openEditStudentDialog = (data) => {
+    student.value = {
+        ...data,
+        birthDate: data.birthDate ? new Date(data.birthDate) : null,
+        enrollmentYear: data.enrollmentYear ? new Date(data.enrollmentYear, 0, 1) : null,
+        graduationYear: data.graduationYear ? new Date(data.graduationYear, 0, 1) : null
+    };
+    submitted.value = false;
+    editStudentDialog.value = true;
+};
+
+const openChangePasswordDialog = (data) => {
+    student.value = { ...data };
+    submitted.value = false;
+    changePasswordDialog.value = true;
 };
 
 const hideDialog = () => {
-    studentDialog.value = false;
+    addStudentDialog.value = false;
+    editStudentDialog.value = false;
+    changePasswordDialog.value = false;
     submitted.value = false;
 };
 
 const saveStudent = () => {
-    console.log(student.value);
-
     submitted.value = true;
-    if (student.value.name && student.value.npm && student.value.email && student.value.birthDate && student.value.birthPlace && student.value.gender && student.value.phoneNumber && student.value.enrollmentYear) {
-        if (student.value.id) {
-            updateStudent(student.value.id, { ...student.value, id: undefined, advisorId: student.value.advisorId || undefined, password: undefined }).then((response) => {
-                if (response) {
-                    students.value = students.value.map((s) => (s.id === student.value.id ? { ...response.data.data } : s));
-                    hideDialog();
-                }
-            });
-        } else {
-            createStudent(student.value).then((response) => {
-                if (response) {
-                    students.value.push(response.data.data);
-                    hideDialog();
-                }
-            });
+
+    const studentData = {
+        ...student.value,
+        birthDate: student.value.birthDate?.toISOString().split('T')[0] || null,
+        enrollmentYear: student.value.enrollmentYear?.getFullYear() || null,
+        graduationYear: student.value.graduationYear?.getFullYear() || null
+    };
+
+    const handleResponse = (response) => {
+        if (response) {
+            const studentIndex = students.value.findIndex((s) => s.id === response.data.data.id);
+            if (studentIndex !== -1) {
+                students.value[studentIndex] = {
+                    ...response.data.data,
+                    program: programs.value.find((p) => p.id === response.data.data.programId),
+                    advisor: lecturers.value.find((l) => l.id === response.data.data.advisorId)
+                };
+            } else {
+                students.value.push({
+                    ...response.data.data,
+                    program: programs.value.find((p) => p.id === response.data.data.programId),
+                    advisor: lecturers.value.find((l) => l.id === response.data.data.advisorId)
+                });
+            }
+            hideDialog();
         }
+    };
+
+    if (addStudentDialog.value) {
+        createStudent(studentData).then(handleResponse);
+    } else if (editStudentDialog.value) {
+        // eslint-disable-next-line no-unused-vars
+        const { id, password, ...studentDataWithoutPassword } = studentData;
+        updateStudent(student.value.id, studentDataWithoutPassword).then(handleResponse);
     }
 };
 
-const editStudent = (data) => {
-    student.value = { ...data };
-    submitted.value = false;
-    studentDialog.value = true;
+const changePassword = () => {
+    submitted.value = true;
+
+    if (student.value.newPassword) {
+        const payload = {
+            password: student.value.newPassword
+        };
+
+        updateStudentPassword(student.value.id, payload).then((response) => {
+            if (response) {
+                hideDialog();
+            }
+        });
+    }
 };
 
 const confirmDeleteStudent = (data) => {
@@ -134,7 +182,7 @@ onMounted(() => {
         <div class="card">
             <div class="flex justify-between">
                 <h4 class="font-semibold text-xl">Manage Students (Data Mahasiswa)</h4>
-                <Button label="New" icon="pi pi-plus" class="mr-2" @click="openNew" />
+                <Button label="New" icon="pi pi-plus" class="mr-2" @click="openAddStudentDialog" />
             </div>
 
             <DataTable
@@ -162,15 +210,19 @@ onMounted(() => {
 
                 <Column field="name" header="Nama" sortable style="min-width: 16rem"></Column>
                 <Column field="npm" header="NPM" sortable style="min-width: 12rem"></Column>
-                <Column field="email" header="Email" sortable style="min-width: 16rem"></Column>
                 <Column field="gender" header="Jenis Kelamin" sortable style="min-width: 10rem">
                     <template #body="{ data }">
-                        <span v-if="data.gender === 'MALE'">Pria</span>
+                        <span v-if="data.gender === 'MALE'">Laki-laki</span>
                         <span v-else-if="data.gender === 'FEMALE'">Wanita</span>
                         <span v-else>Tidak Diketahui</span>
                     </template>
                 </Column>
-                <Column field="phoneNumber" header="Nomor HP" sortable style="min-width: 12rem"></Column>
+                <Column field="programId" header="Program Studi" sortable style="min-width: 12rem">
+                    <template #body="{ data }">
+                        <span v-if="data.program">{{ data.program.code }}</span>
+                        <span v-else>Tidak Diketahui</span>
+                    </template>
+                </Column>
                 <Column field="advisorId" header="Dosen Wali" sortable style="min-width: 12rem">
                     <template #body="{ data }">
                         <span v-if="data.advisor">{{ data.advisor.name }}</span>
@@ -179,81 +231,164 @@ onMounted(() => {
                 </Column>
                 <Column :exportable="false" style="min-width: 12rem">
                     <template #body="{ data }">
-                        <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editStudent(data)" />
+                        <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="openEditStudentDialog(data)" />
+                        <Button icon="pi pi-key" outlined rounded class="mr-2" @click="openChangePasswordDialog(data)" />
                         <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteStudent(data)" />
                     </template>
                 </Column>
             </DataTable>
         </div>
 
-        <!-- Dialog for Creating/Editing Student -->
-        <Dialog v-model:visible="studentDialog" :style="{ width: '450px' }" header="Student Details" :modal="true">
+        <!-- Dialog for Adding Student -->
+        <Dialog v-model:visible="addStudentDialog" :style="{ width: '450px' }" header="Add Student" :modal="true">
             <div class="flex flex-col gap-6">
                 <div>
                     <label for="name" class="block font-bold mb-3">Nama</label>
-                    <InputText id="name" v-model.trim="student.name" required="true" autofocus :invalid="submitted && !student.name" class="w-full" />
+                    <InputText id="name" v-model.trim="student.name" required autofocus :invalid="submitted && !student.name" fluid />
                     <small v-if="submitted && !student.name" class="text-red-500">Name is required.</small>
                 </div>
                 <div>
                     <label for="npm" class="block font-bold mb-3">NPM</label>
-                    <InputText id="npm" v-model.trim="student.npm" required="true" :invalid="submitted && !student.npm" class="w-full" />
+                    <InputText id="npm" v-model.trim="student.npm" required :invalid="submitted && !student.npm" fluid />
                     <small v-if="submitted && !student.npm" class="text-red-500">NPM is required.</small>
                 </div>
                 <div>
                     <label for="email" class="block font-bold mb-3">Email</label>
-                    <InputText id="email" type="email" v-model.trim="student.email" required="true" :invalid="submitted && !student.email" class="w-full" />
+                    <InputText id="email" type="email" v-model.trim="student.email" required :invalid="submitted && !student.email" fluid />
                     <small v-if="submitted && !student.email" class="text-red-500">Email is required.</small>
                 </div>
                 <div>
                     <label for="password" class="block font-bold mb-3">Password</label>
-                    <InputText id="password" v-model.trim="student.password" required="true" :invalid="submitted && !student.password" type="password" class="w-full" />
+                    <Password id="password" v-model.trim="student.password" required :invalid="submitted && !student.password" type="password" fluid />
                     <small v-if="submitted && !student.password" class="text-red-500">Password is required.</small>
                 </div>
                 <div>
                     <label for="birthDate" class="block font-bold mb-3">Tanggal Lahir</label>
-                    <Calendar id="birthDate" v-model="student.birthDate" required="true" :invalid="submitted && !student.birthDate" class="w-full" dateFormat="yy-mm-dd" />
+                    <DatePicker id="birthDate" v-model="student.birthDate" required :invalid="submitted && !student.birthDate" fluid />
                     <small v-if="submitted && !student.birthDate" class="text-red-500">Birth date is required.</small>
                 </div>
                 <div>
                     <label for="birthPlace" class="block font-bold mb-3">Tempat Lahir</label>
-                    <InputText id="birthPlace" v-model.trim="student.birthPlace" required="true" :invalid="submitted && !student.birthPlace" class="w-full" />
+                    <InputText id="birthPlace" v-model.trim="student.birthPlace" required :invalid="submitted && !student.birthPlace" fluid />
                     <small v-if="submitted && !student.birthPlace" class="text-red-500">Birth place is required.</small>
                 </div>
                 <div>
                     <label for="gender" class="block font-bold mb-3">Jenis Kelamin</label>
-                    <Dropdown id="gender" v-model="student.gender" :options="genders" optionLabel="label" optionValue="value" placeholder="Select Gender" class="w-full" />
+                    <Select id="gender" v-model="student.gender" :options="genders" optionLabel="label" optionValue="value" placeholder="Select Gender" fluid />
                 </div>
                 <div>
                     <label for="address" class="block font-bold mb-3">Alamat</label>
-                    <Textarea id="address" v-model="student.address" rows="3" cols="20" class="w-full" />
+                    <Textarea id="address" v-model="student.address" rows="3" cols="20" fluid />
                 </div>
                 <div>
                     <label for="phoneNumber" class="block font-bold mb-3">Nomor HP</label>
-                    <InputText id="phoneNumber" v-model.trim="student.phoneNumber" required="true" :invalid="submitted && !student.phoneNumber" class="w-full" />
+                    <InputText id="phoneNumber" v-model.trim="student.phoneNumber" required :invalid="submitted && !student.phoneNumber" fluid />
                     <small v-if="submitted && !student.phoneNumber" class="text-red-500">Phone number is required.</small>
                 </div>
                 <div>
                     <label for="enrollmentYear" class="block font-bold mb-3">Tahun Masuk</label>
-                    <DatePicker id="enrollmentYear" v-model="student.enrollmentYear" required="true" :invalid="submitted && !student.enrollmentYear" class="w-full" view="year" dateFormat="yy" />
+                    <DatePicker id="enrollmentYear" v-model="student.enrollmentYear" required :invalid="submitted && !student.enrollmentYear" fluid view="year" dateFormat="yy" />
                     <small v-if="submitted && !student.enrollmentYear" class="text-red-500">Enrollment year is required.</small>
                 </div>
                 <div>
                     <label for="graduationYear" class="block font-bold mb-3">Tahun Lulus</label>
-                    <DatePicker id="graduationYear" v-model="student.graduationYear" class="w-full" view="year" dateFormat="yy" />
+                    <DatePicker id="graduationYear" v-model="student.graduationYear" fluid view="year" dateFormat="yy" />
                 </div>
                 <div>
                     <label for="program" class="block font-bold mb-3">Program Studi</label>
-                    <Select id="program" v-model="student.programId" :options="programs.map((program) => ({ label: program.name, value: program.id }))" optionLabel="label" optionValue="value" placeholder="Pilih Program Studi" class="w-full" />
+                    <Select id="program" v-model="student.programId" :options="programs.map((program) => ({ label: program.name, value: program.id }))" optionLabel="label" optionValue="value" placeholder="Pilih Program Studi" fluid />
                 </div>
                 <div>
                     <label for="advisorId" class="block font-bold mb-3">Dosen Wali</label>
-                    <Select id="advisorId" v-model="student.advisorId" :options="lecturers.map((lecturer) => ({ label: lecturer.name, value: lecturer.id }))" optionLabel="label" optionValue="value" placeholder="Pilih Dosen Wali" class="w-full" />
+                    <Select id="advisorId" v-model="student.advisorId" :options="lecturers.map((lecturer) => ({ label: lecturer.name, value: lecturer.id }))" optionLabel="label" optionValue="value" placeholder="Pilih Dosen Wali" fluid />
                 </div>
             </div>
 
             <template #footer>
                 <Button label="Cancel" icon="pi pi-times" text @click="hideDialog" />
                 <Button label="Save" icon="pi pi-check" @click="saveStudent" />
+            </template>
+        </Dialog>
+
+        <!-- Dialog for Editing Student -->
+        <Dialog v-model:visible="editStudentDialog" :style="{ width: '450px' }" header="Edit Student" :modal="true">
+            <div class="flex flex-col gap-6">
+                <div>
+                    <label for="name" class="block font-bold mb-3">Nama</label>
+                    <InputText id="name" v-model.trim="student.name" required autofocus :invalid="submitted && !student.name" fluid />
+                    <small v-if="submitted && !student.name" class="text-red-500">Name is required.</small>
+                </div>
+                <div>
+                    <label for="npm" class="block font-bold mb-3">NPM</label>
+                    <InputText id="npm" v-model.trim="student.npm" required :invalid="submitted && !student.npm" fluid />
+                    <small v-if="submitted && !student.npm" class="text-red-500">NPM is required.</small>
+                </div>
+                <div>
+                    <label for="email" class="block font-bold mb-3">Email</label>
+                    <InputText id="email" type="email" v-model.trim="student.email" required :invalid="submitted && !student.email" fluid />
+                    <small v-if="submitted && !student.email" class="text-red-500">Email is required.</small>
+                </div>
+                <div>
+                    <label for="birthDate" class="block font-bold mb-3">Tanggal Lahir</label>
+                    <DatePicker id="birthDate" v-model="student.birthDate" required :invalid="submitted && !student.birthDate" fluid />
+                    <small v-if="submitted && !student.birthDate" class="text-red-500">Birth date is required.</small>
+                </div>
+                <div>
+                    <label for="birthPlace" class="block font-bold mb-3">Tempat Lahir</label>
+                    <InputText id="birthPlace" v-model.trim="student.birthPlace" required :invalid="submitted && !student.birthPlace" fluid />
+                    <small v-if="submitted && !student.birthPlace" class="text-red-500">Birth place is required.</small>
+                </div>
+                <div>
+                    <label for="gender" class="block font-bold mb-3">Jenis Kelamin</label>
+                    <Select id="gender" v-model="student.gender" :options="genders" optionLabel="label" optionValue="value" placeholder="Select Gender" fluid />
+                </div>
+                <div>
+                    <label for="address" class="block font-bold mb-3">Alamat</label>
+                    <Textarea id="address" v-model="student.address" rows="3" cols="20" fluid />
+                </div>
+                <div>
+                    <label for="phoneNumber" class="block font-bold mb-3">Nomor HP</label>
+                    <InputText id="phoneNumber" v-model.trim="student.phoneNumber" required :invalid="submitted && !student.phoneNumber" fluid />
+                    <small v-if="submitted && !student.phoneNumber" class="text-red-500">Phone number is required.</small>
+                </div>
+                <div>
+                    <label for="enrollmentYear" class="block font-bold mb-3">Tahun Masuk</label>
+                    <DatePicker id="enrollmentYear" v-model="student.enrollmentYear" required :invalid="submitted && !student.enrollmentYear" fluid view="year" dateFormat="yy" />
+                    <small v-if="submitted && !student.enrollmentYear" class="text-red-500">Enrollment year is required.</small>
+                </div>
+                <div>
+                    <label for="graduationYear" class="block font-bold mb-3">Tahun Lulus</label>
+                    <DatePicker id="graduationYear" v-model="student.graduationYear" fluid view="year" dateFormat="yy" />
+                </div>
+                <div>
+                    <label for="program" class="block font-bold mb-3">Program Studi</label>
+                    <Select id="program" v-model="student.programId" :options="programs.map((program) => ({ label: program.name, value: program.id }))" optionLabel="label" optionValue="value" placeholder="Pilih Program Studi" fluid />
+                </div>
+                <div>
+                    <label for="advisorId" class="block font-bold mb-3">Dosen Wali</label>
+                    <Select id="advisorId" v-model="student.advisorId" :options="lecturers.map((lecturer) => ({ label: lecturer.name, value: lecturer.id }))" optionLabel="label" optionValue="value" placeholder="Pilih Dosen Wali" fluid />
+                </div>
+            </div>
+
+            <template #footer>
+                <Button label="Cancel" icon="pi pi-times" text @click="hideDialog" />
+                <Button label="Save" icon="pi pi-check" @click="saveStudent" />
+            </template>
+        </Dialog>
+
+        <!-- Dialog for Changing Password -->
+        <Dialog v-model:visible="changePasswordDialog" :style="{ width: '450px' }" header="Change Password" :modal="true">
+            <div class="flex flex-col gap-6">
+                <div>
+                    <label for="newPassword" class="block font-bold mb-3">New Password</label>
+                    <Password id="newPassword" v-model.trim="student.newPassword" required :invalid="submitted && !student.newPassword" type="password" fluid />
+                    <small v-if="submitted && !student.newPassword" class="text-red-500">New password is required.</small>
+                </div>
+            </div>
+
+            <template #footer>
+                <Button label="Cancel" icon="pi pi-times" text @click="hideDialog" />
+                <Button label="Save" icon="pi pi-check" @click="changePassword" />
             </template>
         </Dialog>
 
