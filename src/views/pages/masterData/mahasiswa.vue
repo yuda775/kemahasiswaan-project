@@ -1,7 +1,6 @@
 <script setup>
 import { FilterMatchMode } from '@primevue/core/api';
 import axios from 'axios';
-import { InputNumber } from 'primevue';
 import { useToast } from 'primevue/usetoast';
 import { onMounted, ref } from 'vue';
 
@@ -45,7 +44,7 @@ const handleApiCall = async (method, url, data = null) => {
 };
 
 const updateStudent = (id, data) => handleApiCall('patch', `${import.meta.env.VITE_APP_BASE_URL}/api/student/${id}`, data);
-const createStudent = (data) => handleApiCall('post', `${import.meta.env.VITE_APP_BASE_URL}/api/student/`, data);
+const createStudent = (data) => handleApiCall('post', `${import.meta.env.VITE_APP_BASE_URL}/api/student/register/`, data);
 const deleteStudentApi = (id) => handleApiCall('delete', `${import.meta.env.VITE_APP_BASE_URL}/api/student/${id}`);
 
 const openNew = () => {
@@ -60,6 +59,8 @@ const hideDialog = () => {
 };
 
 const saveStudent = () => {
+    console.log(student.value);
+
     submitted.value = true;
     if (student.value.name && student.value.npm && student.value.email && student.value.birthDate && student.value.birthPlace && student.value.gender && student.value.phoneNumber && student.value.enrollmentYear) {
         if (student.value.id) {
@@ -189,7 +190,7 @@ onMounted(() => {
         <Dialog v-model:visible="studentDialog" :style="{ width: '450px' }" header="Student Details" :modal="true">
             <div class="flex flex-col gap-6">
                 <div>
-                    <label for="name" class="block font-bold mb-3">Name</label>
+                    <label for="name" class="block font-bold mb-3">Nama</label>
                     <InputText id="name" v-model.trim="student.name" required="true" autofocus :invalid="submitted && !student.name" class="w-full" />
                     <small v-if="submitted && !student.name" class="text-red-500">Name is required.</small>
                 </div>
@@ -200,7 +201,7 @@ onMounted(() => {
                 </div>
                 <div>
                     <label for="email" class="block font-bold mb-3">Email</label>
-                    <InputText id="email" v-model.trim="student.email" required="true" :invalid="submitted && !student.email" class="w-full" />
+                    <InputText id="email" type="email" v-model.trim="student.email" required="true" :invalid="submitted && !student.email" class="w-full" />
                     <small v-if="submitted && !student.email" class="text-red-500">Email is required.</small>
                 </div>
                 <div>
@@ -209,44 +210,44 @@ onMounted(() => {
                     <small v-if="submitted && !student.password" class="text-red-500">Password is required.</small>
                 </div>
                 <div>
-                    <label for="birthDate" class="block font-bold mb-3">Birth Date</label>
-                    <Calendar id="birthDate" v-model="student.birthDate" required="true" :invalid="submitted && !student.birthDate" class="w-full" />
+                    <label for="birthDate" class="block font-bold mb-3">Tanggal Lahir</label>
+                    <Calendar id="birthDate" v-model="student.birthDate" required="true" :invalid="submitted && !student.birthDate" class="w-full" dateFormat="yy-mm-dd" />
                     <small v-if="submitted && !student.birthDate" class="text-red-500">Birth date is required.</small>
                 </div>
                 <div>
-                    <label for="birthPlace" class="block font-bold mb-3">Birth Place</label>
+                    <label for="birthPlace" class="block font-bold mb-3">Tempat Lahir</label>
                     <InputText id="birthPlace" v-model.trim="student.birthPlace" required="true" :invalid="submitted && !student.birthPlace" class="w-full" />
                     <small v-if="submitted && !student.birthPlace" class="text-red-500">Birth place is required.</small>
                 </div>
                 <div>
-                    <label for="gender" class="block font-bold mb-3">Gender</label>
+                    <label for="gender" class="block font-bold mb-3">Jenis Kelamin</label>
                     <Dropdown id="gender" v-model="student.gender" :options="genders" optionLabel="label" optionValue="value" placeholder="Select Gender" class="w-full" />
                 </div>
                 <div>
-                    <label for="address" class="block font-bold mb-3">Address</label>
+                    <label for="address" class="block font-bold mb-3">Alamat</label>
                     <Textarea id="address" v-model="student.address" rows="3" cols="20" class="w-full" />
                 </div>
                 <div>
-                    <label for="phoneNumber" class="block font-bold mb-3">Phone Number</label>
+                    <label for="phoneNumber" class="block font-bold mb-3">Nomor HP</label>
                     <InputText id="phoneNumber" v-model.trim="student.phoneNumber" required="true" :invalid="submitted && !student.phoneNumber" class="w-full" />
                     <small v-if="submitted && !student.phoneNumber" class="text-red-500">Phone number is required.</small>
                 </div>
                 <div>
-                    <label for="enrollmentYear" class="block font-bold mb-3">Enrollment Year</label>
-                    <InputText id="enrollmentYear" v-model.trim="student.enrollmentYear" required="true" :invalid="submitted && !student.enrollmentYear" class="w-full" />
+                    <label for="enrollmentYear" class="block font-bold mb-3">Tahun Masuk</label>
+                    <DatePicker id="enrollmentYear" v-model="student.enrollmentYear" required="true" :invalid="submitted && !student.enrollmentYear" class="w-full" view="year" dateFormat="yy" />
                     <small v-if="submitted && !student.enrollmentYear" class="text-red-500">Enrollment year is required.</small>
                 </div>
                 <div>
-                    <label for="graduationYear" class="block font-bold mb-3">Graduation Year</label>
-                    <InputText id="graduationYear" v-model.trim="student.graduationYear" class="w-full" />
+                    <label for="graduationYear" class="block font-bold mb-3">Tahun Lulus</label>
+                    <DatePicker id="graduationYear" v-model="student.graduationYear" class="w-full" view="year" dateFormat="yy" />
                 </div>
                 <div>
-                    <label for="advisorId" class="block font-bold mb-3">Advisor ID</label>
-                    <InputNumber id="advisorId" v-model.trim="student.advisorId" class="w-full" />
+                    <label for="program" class="block font-bold mb-3">Program Studi</label>
+                    <Select id="program" v-model="student.programId" :options="programs.map((program) => ({ label: program.name, value: program.id }))" optionLabel="label" optionValue="value" placeholder="Pilih Program Studi" class="w-full" />
                 </div>
                 <div>
-                    <label for="programId" class="block font-bold mb-3">Program ID</label>
-                    <InputText id="programId" v-model.trim="student.programId" class="w-full" />
+                    <label for="advisorId" class="block font-bold mb-3">Dosen Wali</label>
+                    <Select id="advisorId" v-model="student.advisorId" :options="lecturers.map((lecturer) => ({ label: lecturer.name, value: lecturer.id }))" optionLabel="label" optionValue="value" placeholder="Pilih Dosen Wali" class="w-full" />
                 </div>
             </div>
 

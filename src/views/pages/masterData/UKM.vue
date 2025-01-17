@@ -72,7 +72,7 @@ const hideDialog = () => {
 
 const saveUKM = () => {
     submitted.value = true;
-    if (ukm.value.name && ukm.value.headId) {
+    if (ukm.value.name) {
         createUkm(ukm.value).then((response) => {
             if (response) {
                 const student = students.value.find((s) => s.id === response.data.data.headId);
@@ -219,7 +219,6 @@ onMounted(() => {
                 <div>
                     <label for="head" class="block font-bold mb-3">Head</label>
                     <Select id="head" v-model="ukm.headId" :options="students" :optionLabel="(student) => `${student.name} (${student.npm})`" optionValue="id" placeholder="Select Head" filter class="w-full" />
-                    <small v-if="submitted && !ukm.headId" class="text-red-500">Head is required.</small>
                 </div>
             </div>
 
