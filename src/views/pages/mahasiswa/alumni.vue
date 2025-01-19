@@ -148,8 +148,8 @@ onMounted(() => {
                             <div class="flex items-center gap-2" v-if="data.status === 'Sudah Mengisi' && data.filePath">
                                 <img crossorigin="anonymous" :src="getImageUrl(data.filePath)" alt="Uploaded file preview" class="w-24 rounded object-cover" />
                                 <input type="file" accept="image/*" :ref="`fileInput-${data.id}`" style="display: none" @change="(e) => onUpload(e, data.id)" />
-                                <Button type="button" @click="$refs[`fileInput-${data.id}`].click()" icon="pi pi-pencil" class="p-button-outlined" />
-                                <Button type="button" @click="cancelAnswer(data.id)" icon="pi pi-trash" class="p-button-outlined p-button-danger" />
+                                <Button type="button" @click="$refs[`fileInput-${data.id}`].click()" icon="pi pi-pencil" class="p-button-outlined p-button-rounded" />
+                                <Button type="button" @click="cancelAnswer(data.id)" icon="pi pi-trash" class="p-button-outlined p-button-rounded p-button-danger" />
                             </div>
                         </div>
                         <div v-else class="flex flex-col items-center">
