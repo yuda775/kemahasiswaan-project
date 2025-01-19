@@ -53,10 +53,8 @@ const deleteAcademicYearApi = (id) => handleApiCall('delete', `${import.meta.env
 
 const onCellEditComplete = (event) => {
     const { data, newValue, field } = event;
-    updateAcademicYear(data.id, { [field]: newValue }).then((response) => {
-        if (response) {
-            academicYears.value = academicYears.value.map((ay) => (ay.id === data.id ? { ...ay, [field]: newValue } : ay));
-        }
+    updateAcademicYear(data.id, { [field]: newValue }).then(() => {
+        getDataAcademicYears();
     });
 };
 
@@ -73,18 +71,17 @@ const hideDialog = () => {
 
 const saveAcademicYear = () => {
     submitted.value = true;
-    if (academicYear.value.year && academicYear.value.semester !== undefined && academicYear.value.isActive !== undefined) {
-        createAcademicYear({
-            year: academicYear.value.year,
-            semester: academicYear.value.semester,
-            isActive: academicYear.value.isActive
-        }).then((response) => {
-            if (response) {
-                academicYears.value.push(response.data.data);
-                hideDialog();
-            }
-        });
-    }
+    createAcademicYear({
+        year: academicYear.value.year,
+        semester: academicYear.value.semester,
+        startDate: academicYear.value.startDate,
+        endDate: academicYear.value.endDate
+    }).then((response) => {
+        if (response) {
+            academicYears.value.push(response.data.data);
+            hideDialog();
+        }
+    });
 };
 
 const confirmDeleteAcademicYear = (data) => {
@@ -210,9 +207,17 @@ onMounted(() => {
                     <label for="semester" class="block font-bold mb-3">Semester</label>
                     <Select id="semester" v-model="academicYear.semester" :options="semesters" optionLabel="label" optionValue="value" placeholder="Select a Semester" class="w-full" />
                 </div>
-                <div class="w-full">
-                    <label for="status" class="block font-bold mb-3">Status</label>
-                    <Select id="status" v-model="academicYear.isActive" :options="statuses" optionLabel="label" optionValue="value" placeholder="Select a Status" class="w-full" />
+                <div class="flex flex-wrap justify-between">
+                    <div class="flex flex-col gap-2">
+                        <label for="startDate" class="font-bold">Start Date</label>
+                        <Datepicker v-model="academicYear.startDate" auto-apply :enable-time-picker="false" :format="'dd/MM/yyyy'" input-class="p-inputtext p-component" wrapper-class="p-inputgroup p-component p-inputgroup-md" />
+                        <small v-if="submitted && !academicYear.startDate" class="text-red-500">Start date is required.</small>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label for="endDate" class="font-bold">End Date</label>
+                        <Datepicker v-model="academicYear.endDate" auto-apply :enable-time-picker="false" :format="'dd/MM/yyyy'" input-class="p-inputtext p-component" wrapper-class="p-inputgroup p-component p-inputgroup-md" />
+                        <small v-if="submitted && !academicYear.endDate" class="text-red-500">End date is required.</small>
+                    </div>
                 </div>
             </div>
 

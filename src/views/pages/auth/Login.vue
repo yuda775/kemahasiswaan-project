@@ -2,9 +2,11 @@
 import FloatingConfigurator from '@/components/FloatingConfigurator.vue';
 import { decodeJWT } from '@/service/decodeJWT';
 import axios from 'axios';
+import { useToast } from 'primevue';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
+const toast = useToast();
 const email = ref('');
 const password = ref('');
 const checked = ref(false);
@@ -19,41 +21,52 @@ async function onSubmit() {
     };
 
     try {
-        const response = await axios.post(`${import.meta.env.VITE_APP_BASE_URL}/api/${selectedRole.value}/login`, body);
+        await axios
+            .post(`${import.meta.env.VITE_APP_BASE_URL}/api/${selectedRole.value}/login`, body)
+            .then((response) => {
+                if (response.data.data.token) {
+                    const token = response.data.data.token;
+                    localStorage.setItem('token', token);
 
-        if (response.data.data.token) {
-            const token = response.data.data.token;
-            localStorage.setItem('token', token);
+                    const decodedToken = decodeJWT(token);
+                    console.log('Decoded Token:', decodedToken);
 
-            const decodedToken = decodeJWT(token);
-            console.log('Decoded Token:', decodedToken);
+                    if (decodedToken && decodedToken.role) {
+                        switch (decodedToken.role) {
+                            case 'student':
+                                router.push('/student');
+                                break;
+                            case 'lecturer':
+                                router.push('/lecturer');
+                                break;
+                            case 'admin':
+                                router.push('/master-data');
+                                break;
+                            case 'studentAffairs':
+                                router.push('/kemahasiswaan');
+                                break;
+                            default:
+                                console.log('Unknown role:', decodedToken.role);
+                                break;
+                        }
+                    } else {
+                        console.log('Token tidak memiliki informasi role');
+                    }
 
-            if (decodedToken && decodedToken.role) {
-                switch (decodedToken.role) {
-                    case 'student':
-                        router.push('/student');
-                        break;
-                    case 'lecturer':
-                        router.push('/lecturer');
-                        break;
-                    case 'admin':
-                        router.push('/master-data');
-                        break;
-                    case 'studentAffairs':
-                        router.push('/kemahasiswaan');
-                        break;
-                    default:
-                        console.log('Unknown role:', decodedToken.role);
-                        break;
+                    console.log('Login successful!');
+                } else {
+                    console.log('No token found in the response');
                 }
-            } else {
-                console.log('Token tidak memiliki informasi role');
-            }
-
-            console.log('Login successful!');
-        } else {
-            console.log('No token found in the response');
-        }
+            })
+            .catch((error) => {
+                console.error('Login failed:', error.response ? error.response.data : error.message);
+                toast.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: error.response ? error.response.data.message : error.message,
+                    life: 3000
+                });
+            });
     } catch (error) {
         console.error('Login failed:', error.response ? error.response.data : error.message);
     }

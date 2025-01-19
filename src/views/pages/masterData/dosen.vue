@@ -8,6 +8,7 @@ const toast = useToast();
 const lecturers = ref([]);
 const lecturerDialog = ref(false);
 const deleteLecturerDialog = ref(false);
+const changePasswordDialog = ref(false);
 const lecturer = ref({});
 const selectedLecturers = ref([]);
 const filters = ref({
@@ -39,6 +40,7 @@ const handleApiCall = async (method, url, data = null) => {
 const updateLecturer = (id, data) => handleApiCall('patch', `${import.meta.env.VITE_APP_BASE_URL}/api/lecturer/${id}`, data);
 const createLecturer = (data) => handleApiCall('post', `${import.meta.env.VITE_APP_BASE_URL}/api/lecturer/`, data);
 const deleteLecturerApi = (id) => handleApiCall('delete', `${import.meta.env.VITE_APP_BASE_URL}/api/lecturer/${id}`);
+const updateLecturerPassword = (id, data) => handleApiCall('patch', `${import.meta.env.VITE_APP_BASE_URL}/api/lecturer/change-password/${id}`, data);
 
 const openNew = () => {
     lecturer.value = {};
@@ -48,6 +50,8 @@ const openNew = () => {
 
 const hideDialog = () => {
     lecturerDialog.value = false;
+    deleteLecturerDialog.value = false;
+    changePasswordDialog.value = false;
     submitted.value = false;
 };
 
@@ -90,6 +94,26 @@ const deleteLecturer = () => {
             deleteLecturerDialog.value = false;
         }
     });
+};
+
+const openChangePasswordDialog = (data) => {
+    lecturer.value = { ...data };
+    submitted.value = false;
+    changePasswordDialog.value = true;
+};
+
+const changePassword = () => {
+    submitted.value = true;
+
+    if (lecturer.value.newPassword) {
+        const payload = {
+            password: lecturer.value.newPassword
+        };
+
+        updateLecturerPassword(lecturer.value.id, payload).then(() => {
+            hideDialog();
+        });
+    }
 };
 
 const fetchData = async (endpoint, target) => {
@@ -153,6 +177,7 @@ onMounted(() => {
                 <Column :exportable="false" style="min-width: 12rem">
                     <template #body="{ data }">
                         <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editLecturer(data)" />
+                        <Button icon="pi pi-key" outlined rounded class="mr-2" @click="openChangePasswordDialog(data)" />
                         <Button icon="pi pi-trash" outlined rounded severity="danger" @click="confirmDeleteLecturer(data)" />
                     </template>
                 </Column>
@@ -187,6 +212,21 @@ onMounted(() => {
             <template #footer>
                 <Button label="Cancel" icon="pi pi-times" text @click="hideDialog" />
                 <Button label="Save" icon="pi pi-check" @click="saveLecturer" />
+            </template>
+        </Dialog>
+
+        <Dialog v-model:visible="changePasswordDialog" :style="{ width: '450px' }" header="Change Password" :modal="true">
+            <div class="flex flex-col gap-6">
+                <div>
+                    <label for="newPassword" class="block font-bold mb-3">New Password</label>
+                    <Password id="newPassword" v-model.trim="lecturer.newPassword" required :invalid="submitted && !lecturer.newPassword" type="password" fluid />
+                    <small v-if="submitted && !lecturer.newPassword" class="text-red-500">New password is required.</small>
+                </div>
+            </div>
+
+            <template #footer>
+                <Button label="Cancel" icon="pi pi-times" text @click="hideDialog" />
+                <Button label="Save" icon="pi pi-check" @click="changePassword" />
             </template>
         </Dialog>
 
