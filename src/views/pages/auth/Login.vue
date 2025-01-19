@@ -1,6 +1,7 @@
 <script setup>
-import axios from 'axios';
 import FloatingConfigurator from '@/components/FloatingConfigurator.vue';
+import { decodeJWT } from '@/service/decodeJWT';
+import axios from 'axios';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
@@ -11,23 +12,7 @@ const selectedRole = ref('student');
 
 const router = useRouter();
 
-function decodeJWT(token) {
-    const parts = token.split('.');
-    if (parts.length !== 3) {
-        throw new Error('Invalid JWT token');
-    }
-    const base64Url = parts[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = atob(base64);
-    return JSON.parse(jsonPayload);
-}
-
 async function onSubmit() {
-    console.log('Role:', selectedRole.value);
-    console.log('Email:', email.value);
-    console.log('Password:', password.value);
-    console.log('Remember Me:', checked.value);
-
     const body = {
         email: email.value,
         password: password.value
