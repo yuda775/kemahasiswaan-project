@@ -1,8 +1,9 @@
 <script setup>
 import { decodeJWT } from '@/service/decodeJWT';
+import { FilterMatchMode } from '@primevue/core/api';
 import axios from 'axios';
 import { useToast } from 'primevue/usetoast';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 
 const toast = useToast();
 const token = localStorage.getItem('token');
@@ -15,8 +16,11 @@ const selectedActivity = ref(null);
 const activities = ref([]);
 const categories = ref([]);
 const academicYears = ref([]);
-const statusOptions = ref(['APPROVED', 'REJECTED', 'Menunggu']);
-const filters = ref({});
+const statusOptions = ref([
+    { label: 'Menunggu', value: 'PENDING' },
+    { label: 'Disetujui', value: 'APPROVED' },
+    { label: 'Ditolak', value: 'REJECTED' }
+]);
 const newActivity = ref({
     category: null,
     points: null,
@@ -128,7 +132,7 @@ const saveActivity = async () => {
             })
             .then(() => {
                 toast.add({ severity: 'success', summary: 'Successful', detail: 'Activity Saved', life: 4000 });
-                getActivities();
+                fetchData();
             })
             .finally(() => {
                 newActivity.value = {
@@ -151,49 +155,64 @@ const updateActivity = () => {
     // Logic to update the selected activity can be added here
 };
 
-const getActivities = async () => {
-    await axios
-        .get(`${import.meta.env.VITE_APP_BASE_URL}/api/student-activity/student/${payload?.id}`)
-        .then((response) => {
-            activities.value = response.data.data;
-        })
-        .catch((error) => {
-            console.error('Error fetching data:', error);
-        });
+const filters = ref({
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS }
+});
+const query = reactive({
+    academicYear: null,
+    advisorStatus: null,
+    studentStatus: null
+});
+
+const fetchData = async () => {
+    try {
+        const [activitiesResponse, categoriesResponse, academicYearsResponse] = await Promise.all([
+            axios.get(`${import.meta.env.VITE_APP_BASE_URL}/api/student-activity/student/${payload?.id}`, {
+                params: {
+                    academicYearId: query.academicYear,
+                    advisorVerification: query.advisorStatus,
+                    studentAffairVerification: query.studentStatus
+                }
+            }),
+            axios.get(`${import.meta.env.VITE_APP_BASE_URL}/api/activity-category/`),
+            axios.get(`${import.meta.env.VITE_APP_BASE_URL}/api/academic-year/`)
+        ]);
+
+        activities.value = activitiesResponse.data.data;
+        categories.value = categoriesResponse.data.data;
+        academicYears.value = academicYearsResponse.data.data.map((x) => ({
+            id: x.id,
+            year: `${x.year} ${x.semester}`,
+            isActive: x.isActive
+        }));
+    } catch (error) {
+        console.error('Error fetching data:', error);
+    }
 };
 
-const getActivityCategories = async () => {
-    await axios
-        .get(`${import.meta.env.VITE_APP_BASE_URL}/api/activity-category/`)
-        .then((response) => {
-            categories.value = response.data.data;
-        })
-        .catch((error) => {
-            console.error('Error fetching data:', error);
-        });
-};
+watch(
+    () => ({ ...query }),
+    () => {
+        fetchData();
+    },
+    { deep: true }
+);
 
-const getAcademicYears = async () => {
-    await axios
-        .get(`${import.meta.env.VITE_APP_BASE_URL}/api/academic-year/`)
-        .then((response) => {
-            academicYears.value = response.data.data.map((x) => {
-                return {
-                    id: x.id,
-                    year: `${x.year} ${x.semester}`,
-                    isActive: x.isActive
-                };
-            });
-        })
-        .catch((error) => {
-            console.error('Error fetching data:', error);
-        });
-};
+onMounted(async () => {
+    try {
+        // Fetch academic years and filter for active ones
+        const academicYearsResponse = await axios.get(`${import.meta.env.VITE_APP_BASE_URL}/api/academic-year/`);
+        academicYears.value = academicYearsResponse.data.data.map((x) => ({
+            id: x.id,
+            year: `${x.year} ${x.semester}`,
+            isActive: x.isActive
+        }));
 
-onMounted(() => {
-    getActivities();
-    getActivityCategories();
-    getAcademicYears();
+        // Set default academic year to active one
+        query.academicYear = academicYears.value.find((year) => year.isActive)?.id;
+    } catch (error) {
+        console.error('Error fetching data:', error);
+    }
 });
 </script>
 
@@ -205,6 +224,7 @@ onMounted(() => {
                 <Button label="Buat Pengajuan" icon="pi pi-plus" class="mr-2" @click="addActivityDialog = true" />
             </div>
             <DataTable
+                v-model:filters="filters"
                 :value="activities"
                 paginator
                 :rows="10"
@@ -219,18 +239,49 @@ onMounted(() => {
                         <div class="field flex flex-wrap gap-2">
                             <label for="academicYearFilter">
                                 <span class="block text-sm font-medium text-gray-700">Tahun Akademik</span>
-                                <Select id="academicYearFilter" v-model="filters.academicYear" :options="academicYears" optionLabel="year" optionValue="year" placeholder="Pilih Tahun Akademik" class="w-full" />
+                                <Select
+                                    id="academicYearFilter"
+                                    v-model="query.academicYear"
+                                    :options="[{ year: 'Semua', id: '' }, ...academicYears]"
+                                    optionLabel="year"
+                                    optionValue="id"
+                                    placeholder="Pilih Tahun Akademik"
+                                    class="w-full"
+                                    @change="fetchData"
+                                />
                             </label>
                             <label for="statusFilter">
-                                <span class="block text-sm font-medium text-gray-700">Status</span>
-                                <Select id="statusFilter" v-model="filters.status" :options="statusOptions" placeholder="Pilih Status" class="w-full" />
+                                <span class="block text-sm font-medium text-gray-700">Status Dosen Wali</span>
+                                <Select
+                                    id="statusFilter"
+                                    v-model="query.advisorStatus"
+                                    :options="[{ label: 'Semua', value: '' }, ...statusOptions]"
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    placeholder="Pilih Status"
+                                    class="w-full"
+                                    @change="fetchData"
+                                />
+                            </label>
+                            <label for="statusFilter">
+                                <span class="block text-sm font-medium text-gray-700">Status Kemahasiswaan</span>
+                                <Select
+                                    id="statusFilter"
+                                    v-model="query.studentStatus"
+                                    :options="[{ label: 'Semua', value: '' }, ...statusOptions]"
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    placeholder="Pilih Status"
+                                    class="w-full"
+                                    @change="fetchData"
+                                />
                             </label>
                         </div>
                         <IconField class="sm:w-auto w-full">
                             <InputIcon>
                                 <i class="pi pi-search" />
                             </InputIcon>
-                            <InputText v-model="filters.search" placeholder="Search" />
+                            <InputText v-model="filters['global'].value" placeholder="Search" />
                         </IconField>
                     </div>
                 </template>
@@ -257,7 +308,7 @@ onMounted(() => {
                         <Tag
                             :icon="data.studentAffairVerification === 'APPROVED' ? 'pi pi-check' : data.studentAffairVerification === 'REJECTED' ? 'pi pi-times' : 'pi pi-exclamation-triangle'"
                             :severity="data.studentAffairVerification === 'APPROVED' ? 'success' : data.studentAffairVerification === 'REJECTED' ? 'danger' : 'secondary'"
-                            :value="data.studentAffairVerification"
+                            :value="data.studentAffairVerification === 'APPROVED' ? 'Disetujui' : data.studentAffairVerification === 'REJECTED' ? 'Ditolak' : 'Menunggu'"
                         ></Tag>
                     </template>
                 </Column>

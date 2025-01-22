@@ -34,19 +34,20 @@ async function onSubmit() {
                     if (decodedToken && decodedToken.role) {
                         switch (decodedToken.role) {
                             case 'student':
-                                router.push('/student');
+                                router.push('/student/kredit-aktivitas');
                                 break;
                             case 'lecturer':
-                                router.push('/lecturer');
+                                router.push('/lecturer/kredit-aktivitas');
                                 break;
                             case 'admin':
-                                router.push('/master-data');
+                                router.push('/master-data/program-studi');
                                 break;
                             case 'studentAffairs':
-                                router.push('/kemahasiswaan');
+                                router.push('/kemahasiswaan/kredit-aktivitas');
                                 break;
                             default:
                                 console.log('Unknown role:', decodedToken.role);
+                                router.push('/auth/access');
                                 break;
                         }
                     } else {
