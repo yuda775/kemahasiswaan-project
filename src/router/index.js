@@ -39,8 +39,8 @@ const router = createRouter({
             ]
         },
         {
-            path: '/kemahasiswaan',
-            name: 'kemahasiswaan',
+            path: '/student-affair',
+            name: 'student-affair',
             component: AppLayout,
             children: [
                 {
@@ -89,6 +89,11 @@ const router = createRouter({
                     path: 'mahasiswa',
                     name: 'mahasiswa',
                     component: () => import('@/views/pages/masterData/mahasiswa.vue')
+                },
+                {
+                    path: 'kemahasiswaan',
+                    name: 'kemahasiswaan',
+                    component: () => import('@/views/pages/masterData/kemahasiswaan.vue')
                 }
             ]
         },

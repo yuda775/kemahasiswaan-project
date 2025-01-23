@@ -3,6 +3,7 @@ import FloatingConfigurator from '@/components/FloatingConfigurator.vue';
 import { decodeJWT } from '@/service/decodeJWT';
 import axios from 'axios';
 import { useToast } from 'primevue';
+
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
@@ -30,6 +31,14 @@ async function onSubmit() {
 
                     const decodedToken = decodeJWT(token);
                     console.log('Decoded Token:', decodedToken);
+                    toast.add({
+                        severity: 'success',
+                        summary: 'Success',
+                        detail: 'Login successful',
+                        life: 3000,
+                        // agar toast tetap tampil walaupun sudah pindah halaman
+                        sticky: true
+                    });
 
                     if (decodedToken && decodedToken.role) {
                         switch (decodedToken.role) {
@@ -42,8 +51,8 @@ async function onSubmit() {
                             case 'admin':
                                 router.push('/master-data/program-studi');
                                 break;
-                            case 'studentAffairs':
-                                router.push('/kemahasiswaan/kredit-aktivitas');
+                            case 'student-affairs':
+                                router.push('/student-affair/kredit-aktivitas');
                                 break;
                             default:
                                 console.log('Unknown role:', decodedToken.role);
@@ -60,11 +69,11 @@ async function onSubmit() {
                 }
             })
             .catch((error) => {
-                console.error('Login failed:', error.response ? error.response.data : error.message);
+                console.error(error.response.data.message);
                 toast.add({
                     severity: 'error',
                     summary: 'Error',
-                    detail: error.response ? error.response.data.message : error.message,
+                    detail: error.response.data.message,
                     life: 3000
                 });
             });
@@ -75,6 +84,7 @@ async function onSubmit() {
 </script>
 
 <template>
+    <Toast />
     <FloatingConfigurator />
     <div class="bg-surface-50 dark:bg-surface-950 flex items-center justify-center min-h-screen min-w-[100vw] overflow-hidden">
         <div class="flex flex-col items-center justify-center">
@@ -97,18 +107,18 @@ async function onSubmit() {
                     <div class="flex justify-center mb-8">
                         <div class="flex space-x-4 border-b-2 border-gray-300 dark:border-gray-700">
                             <div class="cursor-pointer py-2 px-4 font-medium" :class="{ 'text-primary border-b-2 border-primary': selectedRole === 'student' }" @click="selectedRole = 'student'">Mahasiswa</div>
-                            <div class="cursor-pointer py-2 px-4 font-medium" :class="{ 'text-primary border-b-2 border-primary': selectedRole === 'studentAffairs' }" @click="selectedRole = 'studentAffairs'">Kemahasiswaan</div>
+                            <div class="cursor-pointer py-2 px-4 font-medium" :class="{ 'text-primary border-b-2 border-primary': selectedRole === 'student-affairs' }" @click="selectedRole = 'student-affairs'">Kemahasiswaan</div>
                             <div class="cursor-pointer py-2 px-4 font-medium" :class="{ 'text-primary border-b-2 border-primary': selectedRole === 'lecturer' }" @click="selectedRole = 'lecturer'">Dosen</div>
                             <div class="cursor-pointer py-2 px-4 font-medium" :class="{ 'text-primary border-b-2 border-primary': selectedRole === 'admin' }" @click="selectedRole = 'admin'">Admin</div>
                         </div>
                     </div>
 
-                    <div>
+                    <form @submit.prevent="onSubmit">
                         <label for="email1" class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2">Email</label>
-                        <InputText id="email1" type="text" placeholder="Email address" class="w-full md:w-[30rem] mb-8" v-model="email" />
+                        <InputText id="email1" type="email" placeholder="Email address" class="w-full md:w-[30rem] mb-8" v-model="email" required="" />
 
                         <label for="password1" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Password</label>
-                        <Password id="password1" v-model="password" placeholder="Password" :toggleMask="true" class="mb-4" fluid :feedback="false"></Password>
+                        <Password id="password1" v-model="password" placeholder="Password" :toggleMask="true" class="mb-4" fluid :feedback="false" required=""></Password>
 
                         <div class="flex items-center justify-between mt-2 mb-8 gap-8">
                             <div class="flex items-center">
@@ -117,8 +127,8 @@ async function onSubmit() {
                             </div>
                             <span class="font-medium no-underline ml-2 text-right cursor-pointer text-primary">Forgot password?</span>
                         </div>
-                        <Button label="Sign In" class="w-full" @click="onSubmit()"></Button>
-                    </div>
+                        <Button label="Sign In" class="w-full" type="submit"></Button>
+                    </form>
                 </div>
             </div>
         </div>

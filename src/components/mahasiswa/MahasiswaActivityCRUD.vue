@@ -97,9 +97,9 @@ const deleteSelectedActivity = async () => {
         if (index > -1) {
             activities.value.splice(index, 1);
         }
-        toast.add({ severity: 'success', summary: 'Successful', detail: 'Activity Deleted', life: 4000 });
+        toast.add({ severity: 'success', summary: 'Successful', detail: 'Berhasil Membatalkan Pengajuan Aktivitas', life: 4000 });
     } catch (error) {
-        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete activity', life: 4000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: error.response.data.message, life: 4000 });
     } finally {
         deleteActivityDialog.value = false;
     }
