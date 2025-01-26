@@ -6,6 +6,7 @@ import { onMounted, ref } from 'vue';
 
 const confirmPopup = useConfirm();
 const proposals = ref([]);
+const ukmList = ref([]);
 const addProposalDialog = ref(false);
 const expandedRows = ref({});
 const toast = useToast();
@@ -14,6 +15,7 @@ const categoryFilter = ref(null);
 const searchQuery = ref('');
 
 const proposalForm = ref({
+    ukmId: null,
     title: null,
     category: null,
     activityDate: null,
@@ -46,14 +48,24 @@ function confirm(event) {
             label: 'Yes',
             severity: 'danger'
         },
+        reject: () => {},
         accept: () => {
-            toast.add({ severity: 'info', summary: 'Confirmed', detail: 'You have accepted', life: 3000 });
-        },
-        reject: () => {
-            toast.add({ severity: 'info', summary: 'Rejected', detail: 'You have rejected', life: 3000 });
+            deleteProposal(event);
         }
     });
 }
+
+const deleteProposal = async (id) => {
+    await axios
+        .delete(`${import.meta.env.VITE_APP_BASE_URL}/api/proposal/${id}`)
+        .then(() => {
+            fetchData();
+            toast.add({ severity: 'success', summary: 'Proposal Deleted', detail: 'Your proposal has been deleted successfully.', life: 3000 });
+        })
+        .catch((error) => {
+            toast.add({ severity: 'error', summary: 'Proposal Failed', detail: error.response.data.message, life: 3000 });
+        });
+};
 
 const expandAll = () => {
     expandedRows.value = proposals.value.reduce((acc, p) => (acc[p.id] = true) && acc, {});
@@ -67,11 +79,11 @@ const formatDate = (date) => {
     return new Date(date).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' });
 };
 
-const previewDocument = (fileUrl) => {
-    if (fileUrl) {
-        window.open(`${import.meta.env.VITE_APP_BASE_URL}/file/proposal/${fileUrl}`, '_blank');
+const previewDocument = (fileUrl, type) => {
+    if (type == 'LPJ') {
+        window.open(`${import.meta.env.VITE_APP_BASE_URL}/file/proposal/lpj/${fileUrl}`, '_blank');
     } else {
-        toast.add({ severity: 'warn', summary: 'File Tidak Tersedia', detail: 'Berkas tidak tersedia untuk dilihat.', life: 3000 });
+        window.open(`${import.meta.env.VITE_APP_BASE_URL}/file/proposal/${fileUrl}`, '_blank');
     }
 };
 
@@ -79,14 +91,40 @@ const onFileUpload = (event) => {
     proposalForm.value.files = Array.from(event.target.files);
 };
 
+const uploadLPJfiles = async (event, proposalId) => {
+    proposalForm.value.files = Array.from(event.target.files);
+    const formData = new FormData();
+    for (const file of proposalForm.value.files) {
+        formData.append('files', file);
+    }
+
+    await axios
+        .post(`${import.meta.env.VITE_APP_BASE_URL}/api/proposal/lpj/${proposalId}`, formData)
+        .then(() => {
+            fetchData();
+            toast.add({ severity: 'success', summary: 'Proposal Saved', detail: 'Your proposal has been saved successfully.', life: 3000 });
+        })
+        .catch((error) => {
+            toast.add({ severity: 'error', summary: 'Proposal Failed', detail: error.response.data.message, life: 3000 });
+        })
+        .finally(() => {
+            proposalForm.value = {
+                ukmId: null,
+                title: null,
+                category: null,
+                activityDate: null,
+                files: []
+            };
+        });
+};
+
 const removeFile = (file) => {
     proposalForm.value.files = proposalForm.value.files.filter((f) => f !== file);
 };
 
 const saveProposal = async () => {
-    console.log(proposalForm.value);
-
     const formData = new FormData();
+    formData.append('ukmId', proposalForm.value.ukmId);
     formData.append('title', proposalForm.value.title);
     formData.append('category', proposalForm.value.category);
     formData.append('activityDate', proposalForm.value.activityDate);
@@ -136,6 +174,15 @@ const fetchData = async () => {
         })
         .catch((error) => {
             toast.add({ severity: 'error', summary: 'Proposal Failed', detail: error.response.data.message, life: 3000 });
+        });
+
+    await axios
+        .get(`${import.meta.env.VITE_APP_BASE_URL}/api/ukm`)
+        .then((response) => {
+            ukmList.value = response.data.data.map((ukm) => ({ label: ukm.name, value: ukm.id, name: ukm.name }));
+        })
+        .catch((error) => {
+            toast.add({ severity: 'error', summary: 'UKM Failed', detail: error.response.data.message, life: 3000 });
         });
 };
 
@@ -194,14 +241,23 @@ onMounted(() => {
             <Column field="status" header="Status">
                 <template #body="{ data }">
                     <Tag
-                        :value="data.status"
-                        :severity="data.status === 'Pending' ? 'secondary' : data.status === 'Approved' ? 'success' : 'danger'"
-                        :icon="data.status === 'Pending' ? 'pi pi-clock' : data.status === 'Approved' ? 'pi pi-check' : 'pi pi-times'"
+                        :value="data.status === 'PENDING' ? 'Menunggu' : data.status === 'APPROVED' ? 'Disetujui' : 'Ditolak'"
+                        :severity="data.status === 'PENDING' ? 'secondary' : data.status === 'APPROVED' ? 'success' : 'danger'"
+                        :icon="data.status === 'PENDING' ? 'pi pi-clock' : data.status === 'APPROVED' ? 'pi pi-check' : 'pi pi-times'"
                     />
                 </template>
             </Column>
+            <Column field="ukmId" header="UKM" sortable>
+                <template #body="{ data }">
+                    {{ data.ukm.name }}
+                </template>
+            </Column>
             <Column field="title" header="Judul Proposal"></Column>
-            <Column field="category" header="Jenis Kegiatan" sortable></Column>
+            <Column field="category" header="Jenis Kegiatan" sortable>
+                <template #body="{ data }">
+                    {{ data.category === 'INTERNAL' ? 'Internal' : 'Eksternal' }}
+                </template>
+            </Column>
             <Column field="activityDate" header="Waktu Kegiatan" sortable>
                 <template #body="{ data }">
                     {{ formatDate(data.activityDate) }}
@@ -216,30 +272,47 @@ onMounted(() => {
             <Column header="Aksi">
                 <template #body="{ data }">
                     <div class="flex items-center gap-2">
-                        <Button icon="pi pi-times" severity="danger" class="p-button-outlined p-button-rounded" @click="confirm(data)" />
+                        <ConfirmPopup></ConfirmPopup>
+                        <Button v-if="data.status === 'PENDING'" icon="pi pi-times" label="Batalkan" severity="danger" class="p-button-outlined" @click="confirm(data.id)" />
                     </div>
                 </template>
             </Column>
             <template #expansion="{ data }">
                 <div class="p-4">
-                    <h5>Berkas untuk {{ data.title }}</h5>
+                    <h5>Daftar Berkas</h5>
                     <DataTable :value="data.files">
                         <Column field="name" header="Nama Berkas"></Column>
                         <Column header="Aksi">
                             <template #body="{ data }">
                                 <div class="flex items-center gap-2">
-                                    <Button icon="pi pi-eye" class="p-button-outlined p-button-rounded" @click="previewDocument(data.path)" :disabled="!data.path" />
+                                    <Button icon="pi pi-eye" class="p-button-outlined p-button-rounded" @click="previewDocument(data.path, data.type)" :disabled="!data.path" />
                                     <span class="text-sm text-gray-600">{{ data.path ? 'Lihat Berkas' : 'Tidak Tersedia' }}</span>
                                 </div>
                             </template>
                         </Column>
                     </DataTable>
+                    <ConfirmDialog group="templating">
+                        <template #message="slotProps">
+                            <div class="flex flex-col items-center w-full gap-4 border-b border-surface-200 dark:border-surface-700">
+                                <i :class="slotProps.message.icon" class="!text-6xl text-primary-500"></i>
+                                <p>{{ slotProps.message.message }}</p>
+                            </div>
+                        </template>
+                    </ConfirmDialog>
+                    <div v-show="data.status == 'APPROVED' && !data.files.some((file) => file.type == 'LPJ')" class="text-center mt-4">
+                        <Button icon="pi pi-upload" label="Upload LPJ" class="p-button-outlined" @click="$refs.fileInput.click()" />
+                        <input type="file" multiple @change="uploadLPJfiles($event, data.id)" ref="fileInput" style="display: none" />
+                    </div>
                 </div>
             </template>
         </DataTable>
     </div>
     <Dialog v-model:visible="addProposalDialog" :style="{ width: '50rem' }" header="Buat Pengajuan Proposal" :modal="true" @hide="closeDialog">
         <form @submit.prevent="saveProposal">
+            <div class="field mt-4">
+                <label for="ukm" class="block text-sm font-medium text-gray-700">UKM</label>
+                <Select v-model="proposalForm.ukmId" :options="ukmList" optionLabel="label" optionValue="value" placeholder="Pilih UKM" class="mt-1 block w-full" required />
+            </div>
             <div class="field mt-4">
                 <label for="title" class="block text-sm font-medium text-gray-700">Judul Proposal</label>
                 <InputText id="title" v-model="proposalForm.title" placeholder="Masukkan judul proposal" class="mt-1 block w-full" required />
