@@ -40,7 +40,7 @@ const handleApiCall = async (method, url, data = null) => {
 const updatestudentAffair = (id, data) => handleApiCall('patch', `${import.meta.env.VITE_APP_BASE_URL}/api/student-affairs/${id}`, data);
 const createstudentAffair = (data) => handleApiCall('post', `${import.meta.env.VITE_APP_BASE_URL}/api/student-affairs`, data);
 const deletestudentAffairApi = (id) => handleApiCall('delete', `${import.meta.env.VITE_APP_BASE_URL}/api/student-affairs${id}`);
-const updatestudentAffairPassword = (id, data) => handleApiCall('patch', `${import.meta.env.VITE_APP_BASE_URL}/api/student-affairs/change-password${id}`, data);
+const updatestudentAffairPassword = (id, data) => handleApiCall('patch', `${import.meta.env.VITE_APP_BASE_URL}/api/student-affairs/change-password/${id}`, data);
 
 const openNew = () => {
     studentAffair.value = {};

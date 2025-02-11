@@ -15,7 +15,7 @@ if (payload.role === 'student') {
     model.value = [
         {
             label: 'Home',
-            items: [{ label: 'Dashboard', icon: 'pi pi-fw pi-home', to: '/' }]
+            items: [{ label: 'Beranda', icon: 'pi pi-fw pi-home', to: '/' }]
         },
         {
             label: 'Mahasiswa',
