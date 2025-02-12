@@ -110,6 +110,22 @@ const onUpload = (event) => {
 };
 
 const saveActivity = async () => {
+    const activeAcademicYear = academicYears.value.find((year) => year.isActive);
+    if (newActivity.value.date < activeAcademicYear.startDate || newActivity.value.date > activeAcademicYear.endDate) {
+        toast.add({
+            severity: 'warn',
+            summary: 'Peringatan',
+            detail: `Tanggal aktivitas tidak berada dalam rentang tahun akademik aktif. Silakan pilih tanggal antara ${new Date(activeAcademicYear.startDate).toLocaleDateString('id-ID')} dan ${new Date(activeAcademicYear.endDate).toLocaleDateString('id-ID')}.`,
+            life: 4000
+        });
+        return;
+    }
+
+    if (!newActivity.value.academicYear || !newActivity.value.category || !newActivity.value.points || !newActivity.value.name || !newActivity.value.date || !newActivity.value.file) {
+        toast.add({ severity: 'warn', summary: 'Peringatan', detail: 'Silakan lengkapi form pengajuan aktivitas', life: 4000 });
+        return;
+    }
+
     addActivityDialog.value = false;
 
     const formData = new FormData();
@@ -183,7 +199,9 @@ const fetchData = async () => {
         academicYears.value = academicYearsResponse.data.data.map((x) => ({
             id: x.id,
             year: `${x.year} ${x.semester}`,
-            isActive: x.isActive
+            isActive: x.isActive,
+            startDate: x.startDate,
+            endDate: x.endDate
         }));
     } catch (error) {
         console.error('Error fetching data:', error);
