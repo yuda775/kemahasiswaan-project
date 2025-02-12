@@ -3,7 +3,7 @@ import { decodeJWT } from '@/service/decodeJWT';
 import { FilterMatchMode } from '@primevue/core/api';
 import axios from 'axios';
 import { useToast } from 'primevue/usetoast';
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
 
 const toast = useToast();
 const token = localStorage.getItem('token');
@@ -21,14 +21,16 @@ const statusOptions = ref([
     { label: 'Disetujui', value: 'APPROVED' },
     { label: 'Ditolak', value: 'REJECTED' }
 ]);
-const newActivity = ref({
+const defaultActivity = {
     category: null,
     points: null,
     name: null,
     date: null,
     academicYear: null,
     file: null
-});
+};
+
+const newActivity = ref({ ...defaultActivity }); // Inisialisasi dengan objek baru
 
 // Mengambil tahun akademik aktif
 const academicYear = computed(() => {
@@ -109,8 +111,15 @@ const onUpload = (event) => {
     newActivity.value.file = event.target.files[0];
 };
 
-const saveActivity = async () => {
+const validateActivity = () => {
+    console.log(newActivity.value);
+
     const activeAcademicYear = academicYears.value.find((year) => year.isActive);
+    if (!activeAcademicYear) {
+        toast.add({ severity: 'warn', summary: 'Peringatan', detail: 'Tidak ada tahun akademik aktif.', life: 4000 });
+        return false;
+    }
+
     if (newActivity.value.date < activeAcademicYear.startDate || newActivity.value.date > activeAcademicYear.endDate) {
         toast.add({
             severity: 'warn',
@@ -118,13 +127,19 @@ const saveActivity = async () => {
             detail: `Tanggal aktivitas tidak berada dalam rentang tahun akademik aktif. Silakan pilih tanggal antara ${new Date(activeAcademicYear.startDate).toLocaleDateString('id-ID')} dan ${new Date(activeAcademicYear.endDate).toLocaleDateString('id-ID')}.`,
             life: 4000
         });
-        return;
+        return false;
     }
 
-    if (!newActivity.value.academicYear || !newActivity.value.category || !newActivity.value.points || !newActivity.value.name || !newActivity.value.date || !newActivity.value.file) {
-        toast.add({ severity: 'warn', summary: 'Peringatan', detail: 'Silakan lengkapi form pengajuan aktivitas', life: 4000 });
-        return;
+    if (!newActivity.value.category || !newActivity.value.points || !newActivity.value.name || !newActivity.value.date || !newActivity.value.file) {
+        toast.add({ severity: 'warn', summary: 'Peringatan', detail: 'Silakan lengkapi form pengajuan aktivitas.', life: 4000 });
+        return false;
     }
+
+    return true;
+};
+
+const saveActivity = async () => {
+    if (!validateActivity()) return;
 
     addActivityDialog.value = false;
 
@@ -140,29 +155,20 @@ const saveActivity = async () => {
     console.log('Uploading file:', newActivity.value.file, 'with formData:', formData);
 
     try {
-        await axios
-            .post(`${import.meta.env.VITE_APP_BASE_URL}/api/student-activity/`, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-            })
-            .then(() => {
-                toast.add({ severity: 'success', summary: 'Successful', detail: 'Activity Saved', life: 4000 });
-                fetchData();
-            })
-            .finally(() => {
-                newActivity.value = {
-                    category: null,
-                    points: null,
-                    name: null,
-                    date: null,
-                    academicYear: null,
-                    file: null
-                };
-            });
+        await axios.post(`${import.meta.env.VITE_APP_BASE_URL}/api/student-activity/`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+
+        toast.add({ severity: 'success', summary: 'Sukses', detail: 'Aktivitas berhasil disimpan.', life: 4000 });
+
+        await fetchData(); // Pastikan fetchData selesai sebelum mengosongkan form
+
+        newActivity.value = { ...defaultActivity }; // Reset dengan objek baru agar Vue mengenali perubahan
+
+        await nextTick();
     } catch (error) {
         console.error('Error saving activity:', error);
-        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to save activity', life: 4000 });
+        toast.add({ severity: 'error', summary: 'Error', detail: 'Gagal menyimpan aktivitas.', life: 4000 });
     }
 };
 
