@@ -58,7 +58,7 @@ const menuItems = ref([
         items: [
             { label: 'Lihat Komentar', icon: 'pi pi-comment', command: () => handleMenuCommand('viewComment', selectedActivity.value) },
             { label: 'Preview Bukti Aktivitas', icon: 'pi pi-file-pdf', command: () => window.open(`${import.meta.env.VITE_APP_BASE_URL}/file/student-activity/${selectedActivity.value.filePath}`) },
-            { label: 'Edit', icon: 'pi pi-pencil', command: () => handleMenuCommand('edit', selectedActivity.value) },
+            // { label: 'Edit', icon: 'pi pi-pencil', command: () => handleMenuCommand('edit', selectedActivity.value) },
             { label: 'Batalkan', icon: 'pi pi-trash', command: () => handleMenuCommand('delete', selectedActivity.value) }
         ]
     }
@@ -166,10 +166,10 @@ const saveActivity = async () => {
     }
 };
 
-const updateActivity = () => {
-    editActivityDialog.value = false;
-    // Logic to update the selected activity can be added here
-};
+// const updateActivity = () => {
+//     editActivityDialog.value = false;
+//     // Logic to update the selected activity can be added here
+// };
 
 const filters = ref({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS }
@@ -367,7 +367,7 @@ onMounted(async () => {
             </template>
         </Dialog>
 
-        <Dialog v-model:visible="editActivityDialog" :style="{ width: '450px' }" header="Edit Pengajuan " :modal="true">
+        <!-- <Dialog v-model:visible="editActivityDialog" :style="{ width: '450px' }" header="Edit Pengajuan " :modal="true">
             <div class="field">
                 <label for="activityName" class="block text-sm font-medium text-gray-700">Nama Aktivitas</label>
                 <InputText id="activityName" v-model="selectedActivity.name" placeholder="Masukkan nama aktivitas" class="mt-1 block w-full" required />
@@ -389,7 +389,7 @@ onMounted(async () => {
                 <Button label="Cancel" icon="pi pi-times" text @click="editActivityDialog = false" />
                 <Button label="Simpan" icon="pi pi-check" @click="updateActivity" />
             </template>
-        </Dialog>
+        </Dialog> -->
 
         <Dialog v-model:visible="deleteActivityDialog" :style="{ width: '450px' }" header="Konfirmasi" :modal="true">
             <div class="flex items-center gap-4">
