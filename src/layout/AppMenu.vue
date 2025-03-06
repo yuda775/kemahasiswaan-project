@@ -22,7 +22,12 @@ if (payload.role === 'student') {
             items: [
                 { label: 'Aktivitas', icon: 'pi pi-fw pi-graduation-cap', to: '/student/kredit-aktivitas' },
                 { label: 'Proposal', icon: 'pi pi-fw pi-file', to: '/student/proposal-kegiatan' },
-                { label: 'Tracer Alumni', icon: 'pi pi-fw pi-users', to: '/student/tracer-alumni' }
+                {
+                    label: 'Tracer Alumni',
+                    icon: 'pi pi-fw pi-users',
+                    to: '/student/tracer-alumni',
+                    visible: payload.graduationYear !== null
+                }
             ]
         }
     ];
