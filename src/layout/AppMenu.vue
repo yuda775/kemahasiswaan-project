@@ -21,7 +21,7 @@ if (payload.role === 'student') {
             label: 'Mahasiswa',
             items: [
                 { label: 'Aktivitas', icon: 'pi pi-fw pi-graduation-cap', to: '/student/kredit-aktivitas' },
-                { label: 'Proposal', icon: 'pi pi-fw pi-file', to: '/student/proposal-kegiatan' },
+                { label: 'Proposal', icon: 'pi pi-fw pi-file', to: '/student/proposal-kegiatan', visible: payload.proposalAccess },
                 {
                     label: 'Tracer Alumni',
                     icon: 'pi pi-fw pi-users',

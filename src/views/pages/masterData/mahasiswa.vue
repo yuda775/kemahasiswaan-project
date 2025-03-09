@@ -302,6 +302,14 @@ onMounted(() => {
                     <label for="advisorId" class="block font-bold mb-3">Dosen Wali</label>
                     <Select id="advisorId" v-model="student.advisorId" :options="lecturers.map((lecturer) => ({ label: lecturer.name, value: lecturer.id }))" optionLabel="label" optionValue="value" placeholder="Pilih Dosen Wali" fluid />
                 </div>
+                <div>
+                    <label for="proposalAccess" class="block font-bold mb-3">Akses Proposal</label>
+                    <ToggleSwitch v-model="student.proposalAccess">
+                        <template #handle="{ checked }">
+                            <i :class="['!text-xs pi', { 'pi-check': checked, 'pi-times': !checked }]" />
+                        </template>
+                    </ToggleSwitch>
+                </div>
             </div>
 
             <template #footer>
@@ -367,6 +375,15 @@ onMounted(() => {
                 <div>
                     <label for="advisorId" class="block font-bold mb-3">Dosen Wali</label>
                     <Select id="advisorId" v-model="student.advisorId" :options="lecturers.map((lecturer) => ({ label: lecturer.name, value: lecturer.id }))" optionLabel="label" optionValue="value" placeholder="Pilih Dosen Wali" fluid />
+                </div>
+
+                <div>
+                    <label for="proposalAccess" class="block font-bold mb-3">Akses Proposal</label>
+                    <ToggleSwitch v-model="student.proposalAccess">
+                        <template #handle="{ checked }">
+                            <i :class="['!text-xs pi', { 'pi-check': checked, 'pi-times': !checked }]" />
+                        </template>
+                    </ToggleSwitch>
                 </div>
             </div>
 

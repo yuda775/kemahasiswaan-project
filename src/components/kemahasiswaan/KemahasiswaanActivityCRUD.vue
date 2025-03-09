@@ -4,6 +4,11 @@ import axios from 'axios';
 import { useToast } from 'primevue';
 import { onMounted, reactive, ref, watch } from 'vue';
 
+const expandedRows = ref([]);
+
+const onRowToggle = (event) => {
+    expandedRows.value = event.data;
+};
 const toast = useToast();
 const activities = ref([]);
 const categories = ref([]);
@@ -15,17 +20,19 @@ const statusOptions = ref([
 ]);
 
 const onCellEditComplete = async (event) => {
-    let { newData, index } = event;
+    let { newData, data } = event;
+    const activityId = data.id;
 
-    await axios
-        .patch(`${import.meta.env.VITE_APP_BASE_URL}/api/student-activity/${activities.value[index].id}`, {
+    try {
+        await axios.patch(`${import.meta.env.VITE_APP_BASE_URL}/api/student-activity/${activityId}`, {
             studentAffairVerification: newData.studentAffairVerification,
             comments: newData.comments
-        })
-        .then(() => {
-            toast.add({ severity: 'success', summary: 'Successful', detail: 'Activity Updated', life: 3000 });
-            fetchData();
         });
+        toast.add({ severity: 'success', summary: 'Successful', detail: 'Activity Updated', life: 3000 });
+        fetchData();
+    } catch (error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to update activity', life: 3000 });
+    }
 };
 
 const viewFile = (filePath) => {
@@ -60,19 +67,24 @@ onMounted(async () => {
 
 const fetchData = async () => {
     try {
-        // Fetch activities and categories
-        const [activitiesResponse, categoriesResponse] = await Promise.all([
+        const [studentsResponse, categoriesResponse, academicYearsResponse] = await Promise.all([
             axios.get(`${import.meta.env.VITE_APP_BASE_URL}/api/student-activity/student-affair`, {
                 params: {
                     academicYearId: query.academicYear,
                     status: query.status
                 }
             }),
-            axios.get(`${import.meta.env.VITE_APP_BASE_URL}/api/activity-category/`)
+            axios.get(`${import.meta.env.VITE_APP_BASE_URL}/api/activity-category/`),
+            axios.get(`${import.meta.env.VITE_APP_BASE_URL}/api/academic-year/`)
         ]);
 
-        activities.value = activitiesResponse.data.data;
+        activities.value = studentsResponse.data.data.student;
         categories.value = categoriesResponse.data.data;
+        academicYears.value = academicYearsResponse.data.data.map((x) => ({
+            id: x.id,
+            year: `${x.year} ${x.semester}`,
+            isActive: x.isActive
+        }));
     } catch (error) {
         console.error('Error fetching data:', error);
     }
@@ -96,16 +108,15 @@ watch(
             <DataTable
                 v-model:filters="filters"
                 :value="activities"
-                editMode="cell"
-                @cell-edit-complete="onCellEditComplete"
                 paginator
                 :rows="10"
                 :rowsPerPageOptions="[5, 10, 25]"
                 dataKey="id"
                 size="small"
-                currentPageReportTemplate="Showing {first} to {last} of {totalRecords} activity"
+                currentPageReportTemplate="Showing {first} to {last} of {totalRecords} students"
                 paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
-                :globalFilterFields="['academicYears', 'studnet', 'activityCategory', 'activityName', 'point', 'filePath', 'studentAffairVerification', 'comments']"
+                :expandedRows="expandedRows"
+                @row-toggle="onRowToggle"
             >
                 <template #header>
                     <div class="flex sm:flex-row flex-wrap flex-col gap-2 sm:gap-0 justify-between items-end">
@@ -123,10 +134,10 @@ watch(
                                     @change="fetchData"
                                 />
                             </label>
-                            <label for="statusFilter">
+                            <!-- <label for="statusFilter">
                                 <span class="block text-sm font-medium text-gray-700">Status</span>
                                 <Select id="statusFilter" v-model="query.status" :options="[{ label: 'Semua', value: '' }, ...statusOptions]" optionLabel="label" optionValue="value" placeholder="Pilih Status" class="w-full" @change="fetchData" />
-                            </label>
+                            </label> -->
                         </div>
                         <IconField class="sm:w-auto w-full">
                             <InputIcon>
@@ -138,35 +149,63 @@ watch(
                 </template>
                 <template #empty> No data found. </template>
                 <template #loading> Loading data. Please wait. </template>
-
-                <Column field="studnet" header="Mahasiswa">
-                    <template #body="{ data }"> {{ data.student.name }} ({{ data.student.npm }}) </template>
-                </Column>
-                <Column field="activityCategory" header="Kategori Aktivitas"></Column>
-                <Column field="activityName" header="Nama Aktivitas"></Column>
-                <Column field="point" header="Poin"></Column>
-                <Column field="filePath" header="File">
+                <Column :expander="true" headerStyle="width: 3rem" />
+                <Column field="name" header="Nama Mahasiswa">
                     <template #body="{ data }">
-                        <a @click="viewFile(data.filePath)" class="text-blue-500 hover:underline cursor-pointer">Lihat File</a>
+                        {{ data.name }} ({{ data.npm }})
+                        <br />
+                        <div class="flex items-center gap-1 text-sm text-gray-600">
+                            <span class="">{{ data.activities.length }} aktivitas</span>
+                            <span class="px-1 py-0.5 font-semibold rounded-md bg-gray-400 dark:bg-gray-900 dark:text-gray-400"> {{ data.activities.filter((a) => a.studentAffairVerification === 'PENDING').length }} Menunggu </span>
+                            <span class="px-1 py-0.5 font-semibold rounded-md bg-green-400 dark:bg-green-900 dark:text-green-400"> {{ data.activities.filter((a) => a.studentAffairVerification === 'APPROVED').length }} Disetujui </span>
+                            <span class="px-1 py-0.5 font-semibold rounded-md bg-red-400 dark:bg-red-900 dark:text-red-400"> {{ data.activities.filter((a) => a.studentAffairVerification === 'REJECTED').length }} Ditolak </span>
+                        </div>
                     </template>
                 </Column>
-                <Column field="studentAffairVerification" header="Status">
-                    <template #body="{ data }">
-                        <Tag
-                            :icon="data.studentAffairVerification === 'APPROVED' ? 'pi pi-check' : data.studentAffairVerification === 'REJECTED' ? 'pi pi-times' : 'pi pi-exclamation-triangle'"
-                            :severity="data.studentAffairVerification === 'APPROVED' ? 'success' : data.studentAffairVerification === 'REJECTED' ? 'danger' : 'secondary'"
-                            :value="data.studentAffairVerification === 'APPROVED' ? 'Disetujui' : data.studentAffairVerification === 'REJECTED' ? 'Ditolak' : 'Menunggu'"
-                        ></Tag>
-                    </template>
-                    <template #editor="{ data, field }">
-                        <Dropdown v-model="data[field]" :options="statusOptions" optionLabel="label" optionValue="value" placeholder="Select One" class="w-full" :showClear="true" />
-                    </template>
-                </Column>
-                <Column field="comments" header="Komentar" style="min-width: 10rem; width: 15rem">
-                    <template #editor="{ data, field }">
-                        <Textarea v-model="data[field]" type="text" rows="3" class="mt-1 block w-full" />
-                    </template>
-                </Column>
+                <template #expansion="{ data }">
+                    <div class="p-4">
+                        <DataTable
+                            :value="data.activities"
+                            dataKey="id"
+                            editMode="cell"
+                            @cell-edit-complete="onCellEditComplete"
+                            :pt="{
+                                table: { style: 'min-width: 50rem' },
+                                column: {
+                                    bodycell: ({ state }) => ({
+                                        class: [{ '!py-0': state['d_editing'] }]
+                                    })
+                                }
+                            }"
+                        >
+                            <Column field="activityName" header="Nama Aktivitas"></Column>
+                            <Column field="activityCategory" header="Kategori Aktivitas"></Column>
+                            <Column field="point" header="Poin"></Column>
+                            <Column field="filePath" header="File">
+                                <template #body="{ data }">
+                                    <a @click="viewFile(data.filePath)" class="text-blue-500 hover:underline cursor-pointer">Lihat File</a>
+                                </template>
+                            </Column>
+                            <Column field="studentAffairVerification" header="Status">
+                                <template #body="{ data: activity }">
+                                    <Tag
+                                        :icon="activity.studentAffairVerification === 'APPROVED' ? 'pi pi-check' : activity.studentAffairVerification === 'REJECTED' ? 'pi pi-times' : 'pi pi-exclamation-triangle'"
+                                        :severity="activity.studentAffairVerification === 'APPROVED' ? 'success' : activity.studentAffairVerification === 'REJECTED' ? 'danger' : 'secondary'"
+                                        :value="activity.studentAffairVerification === 'APPROVED' ? 'Disetujui' : activity.studentAffairVerification === 'REJECTED' ? 'Ditolak' : 'Menunggu'"
+                                    ></Tag>
+                                </template>
+                                <template #editor="{ data, field }">
+                                    <Dropdown v-model="data[field]" :options="statusOptions" optionLabel="label" optionValue="value" placeholder="Pilih Status" class="w-full" />
+                                </template>
+                            </Column>
+                            <Column field="comments" header="Komentar" :editable="true">
+                                <template #editor="{ data, field }">
+                                    <Textarea v-model="data[field]" type="text" rows="3" class="mt-1 block w-full" />
+                                </template>
+                            </Column>
+                        </DataTable>
+                    </div>
+                </template>
             </DataTable>
         </div>
     </div>

@@ -124,8 +124,8 @@ const validateActivity = () => {
         toast.add({
             severity: 'warn',
             summary: 'Peringatan',
-            detail: `Tanggal aktivitas tidak berada dalam rentang tahun akademik aktif. Silakan pilih tanggal antara ${new Date(activeAcademicYear.startDate).toLocaleDateString('id-ID')} dan ${new Date(activeAcademicYear.endDate).toLocaleDateString('id-ID')}.`,
-            life: 4000
+            detail: `Tanggal aktivitas tidak berada dalam rentang tahun akademik aktif. Silakan pilih tanggal antara ${new Intl.DateTimeFormat('id-ID', { month: 'long' }).format(new Date(activeAcademicYear.startDate))} ${new Date(activeAcademicYear.startDate).getDate()} ${new Date(activeAcademicYear.startDate).getFullYear()} sampai ${new Intl.DateTimeFormat('id-ID', { month: 'long' }).format(new Date(activeAcademicYear.endDate))} ${new Date(activeAcademicYear.endDate).getDate()} ${new Date(activeAcademicYear.endDate).getFullYear()}.`,
+            life: 6000
         });
         return false;
     }

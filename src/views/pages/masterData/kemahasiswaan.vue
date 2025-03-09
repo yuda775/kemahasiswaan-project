@@ -144,7 +144,7 @@ onMounted(() => {
     <div>
         <div class="card">
             <div class="flex justify-between">
-                <h4 class="font-semibold text-xl">Manage studentAffairs (Dosen)</h4>
+                <h4 class="font-semibold text-xl">Manage studentAffairs (Kemahasiswaan)</h4>
                 <Button label="New" icon="pi pi-plus" class="mr-2" @click="openNew" />
             </div>
 
