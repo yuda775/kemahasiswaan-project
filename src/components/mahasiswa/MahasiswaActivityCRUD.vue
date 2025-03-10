@@ -245,7 +245,7 @@ onMounted(async () => {
         <div class="card">
             <div class="flex justify-between items-start">
                 <h4 class="m-0 text-xl font-semibold">Daftar Aktivitas</h4>
-                <Button label="Buat Pengajuan" icon="pi pi-plus" class="mr-2" @click="addActivityDialog = true" />
+                <Button label="Buat Pengajuan" icon="pi pi-plus" class="mr-2" :disabled="payload.graduationYear" @click="addActivityDialog = true" />
             </div>
             <DataTable
                 v-model:filters="filters"

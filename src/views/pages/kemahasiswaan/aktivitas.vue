@@ -4,8 +4,8 @@ import KemahasiswaanCategoryActivityCRUD from '@/components/kemahasiswaan/Kemaha
 </script>
 
 <template>
-    <div>
+    <div class="space-y-4">
         <KemahasiswaanActivityCRUD />
-        <KemahasiswaanCategoryActivityCRUD class="mt-4" />
+        <KemahasiswaanCategoryActivityCRUD />
     </div>
 </template>

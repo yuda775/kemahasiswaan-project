@@ -97,17 +97,20 @@ watch(
     },
     { deep: true }
 );
+
+const dt = ref();
+const exportCSV = () => {
+    dt.value.exportCSV();
+};
 </script>
 
 <template>
     <div>
         <div class="card">
-            <div class="flex justify-between items-start mb-4">
-                <h4 class="m-0 text-xl font-semibold">Daftar Aktivitas</h4>
-            </div>
             <DataTable
                 v-model:filters="filters"
                 :value="activities"
+                ref="dt"
                 paginator
                 :rows="10"
                 :rowsPerPageOptions="[5, 10, 25]"
@@ -119,6 +122,12 @@ watch(
                 @row-toggle="onRowToggle"
             >
                 <template #header>
+                    <div class="flex justify-between items-start">
+                        <h4 class="m-0 text-xl font-semibold">Daftar Pengajuan Aktivitas</h4>
+                        <div class="text-end pb-4">
+                            <Button icon="pi pi-external-link" label="Export" @click="exportCSV($event)" />
+                        </div>
+                    </div>
                     <div class="flex sm:flex-row flex-wrap flex-col gap-2 sm:gap-0 justify-between items-end">
                         <div class="field flex flex-wrap gap-2">
                             <label for="academicYearFilter">
@@ -152,14 +161,42 @@ watch(
                 <Column :expander="true" headerStyle="width: 3rem" />
                 <Column field="name" header="Nama Mahasiswa">
                     <template #body="{ data }">
-                        {{ data.name }} ({{ data.npm }})
-                        <br />
-                        <div class="flex items-center gap-1 text-sm text-gray-600">
-                            <span class="">{{ data.activities.length }} aktivitas</span>
-                            <span class="px-1 py-0.5 font-semibold rounded-md bg-gray-400 dark:bg-gray-900 dark:text-gray-400"> {{ data.activities.filter((a) => a.studentAffairVerification === 'PENDING').length }} Menunggu </span>
-                            <span class="px-1 py-0.5 font-semibold rounded-md bg-green-400 dark:bg-green-900 dark:text-green-400"> {{ data.activities.filter((a) => a.studentAffairVerification === 'APPROVED').length }} Disetujui </span>
-                            <span class="px-1 py-0.5 font-semibold rounded-md bg-red-400 dark:bg-red-900 dark:text-red-400"> {{ data.activities.filter((a) => a.studentAffairVerification === 'REJECTED').length }} Ditolak </span>
-                        </div>
+                        {{ data.name }}
+                        <!-- <br />
+                        <div class="flex justify-between">
+                            <div class="flex items-center gap-1 text-sm text-gray-600">
+                                <span class="">{{ data.activities.length }} aktivitas</span>
+                                <span class="px-1 py-0.5 font-semibold rounded-md bg-gray-400 dark:bg-gray-900 dark:text-gray-400"> {{ data.activities.filter((a) => a.studentAffairVerification === 'PENDING').length }} Menunggu </span>
+                                <span class="px-1 py-0.5 font-semibold rounded-md bg-green-400 dark:bg-green-900 dark:text-green-400"> {{ data.activities.filter((a) => a.studentAffairVerification === 'APPROVED').length }} Disetujui </span>
+                                <span class="px-1 py-0.5 font-semibold rounded-md bg-red-400 dark:bg-red-900 dark:text-red-400"> {{ data.activities.filter((a) => a.studentAffairVerification === 'REJECTED').length }} Ditolak </span>
+                            </div>
+                            <span class="px-1 py-0.5 font-semibold rounded-md bg-blue-400 dark:bg-blue-900 dark:text-blue-400">
+                                Total Poin: {{ data.activities.filter((activity) => activity.studentAffairVerification === 'APPROVED').reduce((total, activity) => total + activity.point, 0) }}
+                            </span>
+                        </div> -->
+                    </template>
+                </Column>
+                <Column field="npm" header="NPM">
+                    <template #body="{ data }"> {{ data.npm }} </template>
+                </Column>
+                <Column header="Menunggu">
+                    <template #body="{ data }">
+                        {{ data.activities.filter((a) => a.studentAffairVerification === 'PENDING').length }}
+                    </template>
+                </Column>
+                <Column header="Disetujui">
+                    <template #body="{ data }">
+                        {{ data.activities.filter((a) => a.studentAffairVerification === 'APPROVED').length }}
+                    </template>
+                </Column>
+                <Column header="Ditolak">
+                    <template #body="{ data }">
+                        {{ data.activities.filter((a) => a.studentAffairVerification === 'REJECTED').length }}
+                    </template>
+                </Column>
+                <Column header="Total Poin">
+                    <template #body="{ data }">
+                        {{ data.activities.filter((activity) => activity.studentAffairVerification === 'APPROVED').reduce((total, activity) => total + activity.point, 0) }}
                     </template>
                 </Column>
                 <template #expansion="{ data }">

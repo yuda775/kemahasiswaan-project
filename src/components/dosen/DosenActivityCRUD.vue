@@ -106,7 +106,7 @@ onMounted(async () => {
     <div>
         <div class="card">
             <div class="flex justify-between items-start mb-4">
-                <h4 class="m-0 text-xl font-semibold">Daftar Aktivitas</h4>
+                <h4 class="m-0 text-xl font-semibold">Daftar Pengajuan Aktivitas</h4>
             </div>
             <DataTable
                 v-model:filters="filters"
@@ -154,15 +154,29 @@ onMounted(async () => {
                 <template #loading> Loading data. Please wait. </template>
                 <Column :expander="true" headerStyle="width: 3rem" />
                 <Column field="name" header="Nama Mahasiswa">
+                    <template #body="{ data }"> {{ data.name }} </template>
+                </Column>
+                <Column field="npm" header="NPM">
+                    <template #body="{ data }"> {{ data.npm }} </template>
+                </Column>
+                <Column header="Menunggu">
                     <template #body="{ data }">
-                        {{ data.name }} ({{ data.npm }})
-                        <br />
-                        <div class="flex items-center gap-1 text-sm text-gray-600">
-                            <span class="">{{ data.activities.length }} aktivitas</span>
-                            <span class="px-1 py-0.5 font-semibold rounded-md bg-gray-400 dark:bg-gray-900 dark:text-gray-400"> {{ data.activities.filter((a) => a.advisorVerification === 'PENDING').length }} Menunggu </span>
-                            <span class="px-1 py-0.5 font-semibold rounded-md bg-green-400 dark:bg-green-900 dark:text-green-400"> {{ data.activities.filter((a) => a.advisorVerification === 'APPROVED').length }} Disetujui </span>
-                            <span class="px-1 py-0.5 font-semibold rounded-md bg-red-400 dark:bg-red-900 dark:text-red-400"> {{ data.activities.filter((a) => a.advisorVerification === 'REJECTED').length }} Ditolak </span>
-                        </div>
+                        {{ data.activities.filter((a) => a.advisorVerification === 'PENDING').length }}
+                    </template>
+                </Column>
+                <Column header="Disetujui">
+                    <template #body="{ data }">
+                        {{ data.activities.filter((a) => a.advisorVerification === 'APPROVED').length }}
+                    </template>
+                </Column>
+                <Column header="Ditolak">
+                    <template #body="{ data }">
+                        {{ data.activities.filter((a) => a.advisorVerification === 'REJECTED').length }}
+                    </template>
+                </Column>
+                <Column header="Total Poin">
+                    <template #body="{ data }">
+                        {{ data.activities.filter((activity) => activity.advisorVerification === 'APPROVED').reduce((total, activity) => total + activity.point, 0) }}
                     </template>
                 </Column>
                 <template #expansion="{ data }">
